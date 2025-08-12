@@ -1,32 +1,44 @@
-import { Scene, GameObjects } from 'phaser';
+import { Scene } from 'phaser';
 
-export class MainMenu extends Scene
-{
-    background: GameObjects.Image;
-    logo: GameObjects.Image;
-    title: GameObjects.Text;
+export class MainMenu extends Scene {
+    background: Phaser.GameObjects.TileSprite;
 
-    constructor ()
-    {
+    constructor() {
         super('MainMenu');
     }
 
-    create ()
-    {
-        this.background = this.add.image(512, 384, 'background');
+    create() {
+        this.background = this.add
+            .tileSprite(0, 0, this.scale.width, this.scale.height, 'scrolling-background')
+            .setOrigin(0, 0);
 
-        this.logo = this.add.image(512, 300, 'logo');
+        this.add
+            .text(512, 250, 'Legend of Cosmos III', {
+                fontFamily: 'Arial Black',
+                fontSize: 64,
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 8,
+                align: 'center',
+            })
+            .setOrigin(0.5);
 
-        this.title = this.add.text(512, 460, 'Main Menu', {
-            fontFamily: 'Arial Black', fontSize: 38, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
-        }).setOrigin(0.5);
+        this.add
+            .text(512, 450, 'Click to Play', {
+                fontFamily: 'Arial',
+                fontSize: 38,
+                color: '#ffffff',
+                align: 'center',
+            })
+            .setOrigin(0.5);
 
         this.input.once('pointerdown', () => {
-
+            this.sound.play('music', { loop: true, volume: 0.5 });
             this.scene.start('Game');
-
         });
+    }
+
+    update() {
+        this.background.tilePositionY -= 0.5;
     }
 }
