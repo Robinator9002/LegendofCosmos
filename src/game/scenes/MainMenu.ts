@@ -33,7 +33,7 @@ export class MainMenu extends Scene {
             .setOrigin(0.5);
 
         this.input.once('pointerdown', () => {
-            this.sound.play('music', { loop: true, volume: 0.5 });
+            //this.sound.play('music', { loop: true, volume: 0.5 }); Remove Music for now
             this.scene.start('Game');
         });
     }

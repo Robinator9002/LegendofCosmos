@@ -6,25 +6,20 @@ export class Preloader extends Scene {
     }
 
     init() {
-        //  We loaded this image in our Boot Scene, so we can display it here
+        //  Display a background and a progress bar
         this.add.image(512, 384, 'background');
-
-        //  A simple progress bar. This is the outline of the bar.
         this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, 0xffffff);
-
-        //  This is the progress bar itself. It will increase in width from 0 to 460 as assets load.
         const bar = this.add.rectangle(512 - 230, 384, 4, 28, 0xffffff);
-
-        //  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
         this.load.on('progress', (progress: number) => {
-            //  Update the progress bar (our bar is 464px wide, so 464 * progress)
             bar.width = 4 + 460 * progress;
         });
     }
 
     preload() {
-        //  Load the assets for the game - Replace with your own assets
+        //  Set the base path for assets
         this.load.setPath('assets');
+
+        // --- Load Game Assets ---
 
         // Background
         this.load.image('scrolling-background', 'Backgrounds/darkPurple.png');
@@ -39,33 +34,30 @@ export class Preloader extends Scene {
         // Lasers
         this.load.image('laser', 'PNG/Lasers/laserBlue01.png');
 
-        // Explosions
-        this.load.spritesheet('explosion', 'PNG/Effects/spaceEffects_004.png', {
-            frameWidth: 98, // Adjust based on your spritesheet
-            frameHeight: 97,
-        });
+        // --- Load Debris and Effect Assets ---
+        // These are the specific parts our ExplosionManager will use.
+        // We give them simple, descriptive keys.
+        this.load.image('part-wing-red', 'PNG/Parts/wingRed_0.png');
+        this.load.image('part-cockpit-red', 'PNG/Parts/cockpitRed_0.png');
+        this.load.image('part-generic-1', 'PNG/Parts/spaceParts_015.png');
+        this.load.image('part-generic-2', 'PNG/Parts/spaceParts_025.png');
+        this.load.image('part-generic-3', 'PNG/Parts/spaceParts_035.png');
+
+        // Load the first frame of the fire animation for the smoke cloud effect.
+        this.load.image('fire0', 'PNG/Effects/fire00.png');
 
         // Audio
-        this.load.audio('music', 'Bonus/music.wav');
+        // this.load.audio('music', 'Bonus/music.wav');
         this.load.audio('laser-sound', 'Bonus/sfx_laser1.ogg');
         this.load.audio('explosion-sound', 'Bonus/death.wav');
         this.load.audio('gameover-sound', 'Bonus/sfx_lose.ogg');
     }
 
     create() {
-        //  When all the assets have loaded, it's often worth creating global animations here that the rest of the game can use.
-        this.anims.create({
-            key: 'explode',
-            frames: this.anims.generateFrameNumbers('explosion', {
-                start: 0,
-                end: 15,
-            }),
-            frameRate: 24,
-            repeat: 0,
-            hideOnComplete: true,
-        });
+        //  Animations are no longer needed here since the ExplosionManager handles effects dynamically.
+        //  This keeps the Preloader's job simple: just load assets.
 
-        //  Move to the MainMenu. You could also jump straight to the Game Scene
+        //  Move to the MainMenu
         this.scene.start('MainMenu');
     }
 }
