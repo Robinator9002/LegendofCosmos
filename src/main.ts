@@ -24,8 +24,7 @@ const config: Phaser.Types.Core.GameConfig = {
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     // The incorrect pipeline property has been removed.
-    // Post FX Pipelines must be registered within the scenes that use them,
-    // which we will do in the next steps.
+    // We will register and apply the Post FX Pipeline within the Game scene itself.
     scene: [Boot, Preloader, MainMenu, Game, GameOver],
 };
 

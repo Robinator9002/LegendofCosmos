@@ -58,28 +58,25 @@ export class BloomPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipelin
     private _intensity: number;
     private _strength: number;
 
-    // The constructor now correctly accepts a WebGLPipelineConfig object.
     constructor(game: Phaser.Game) {
-        // We pass a configuration object to the super constructor.
-        // This is the modern, correct way to initialize a pipeline.
         super({
             game: game,
             renderTarget: true,
             fragShader: fragShader,
         });
 
-        this._intensity = 0.5; // How bright the glow is
-        this._strength = 0.3; // How much of the original brightness is required to trigger the glow
+        // --- Corrected Values ---
+        // These are much more subtle and will produce a visible glow instead of a white screen.
+        this._intensity = 0.6; // How bright the glow is
+        this._strength = 0.4; // How much of the original brightness is required to trigger the glow
     }
 
     onPreRender() {
-        // This method remains the same, setting the uniform values each frame.
         this.set2f('uResolution', this.renderer.width, this.renderer.height);
         this.set1f('uIntensity', this._intensity);
         this.set1f('uStrength', this._strength);
     }
 
-    // Public getters and setters to control the bloom effect from our Game scene.
     get intensity(): number {
         return this._intensity;
     }

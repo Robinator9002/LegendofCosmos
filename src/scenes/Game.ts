@@ -4,7 +4,7 @@ import { Enemy } from '../objects/Enemy';
 import { Laser } from '../objects/Laser';
 import { ExplosionManager } from '../effects/ExplosionManager';
 import { ParallaxBackground } from '../effects/ParallaxBackground';
-import { BloomPipeline } from '../effects/BloomPipeline'; // Import the pipeline
+import { BloomPipeline } from '../effects/BloomPipeline';
 
 // The main Game scene, where all the action happens.
 export class Game extends Scene {
@@ -35,11 +35,12 @@ export class Game extends Scene {
         });
 
         // --- Post-Processing Effects ---
-        // We get the custom pipeline from the renderer by its key and add it to the camera.
-        const bloom = (this.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines.get(
+        // This is the correct, modern way to add and apply a Post FX Pipeline.
+        (this.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines.addPostPipeline(
             'Bloom',
-        ) as BloomPipeline;
-        this.cameras.main.setPostPipeline(bloom);
+            BloomPipeline,
+        );
+        this.cameras.main.setPostPipeline('Bloom');
 
         // --- Effects ---
         this.explosionManager = new ExplosionManager(this);
@@ -137,7 +138,7 @@ export class Game extends Scene {
             enemyObject.takeDamage(1);
 
             if (!enemyObject.active) {
-                this.score += enemyObject.getData('value') as number;
+                this.score += enemyObject.getData('scoreValue') as number;
                 this.scoreText.setText('Score: ' + this.score);
                 this.explosionManager.createExplosion(
                     enemyObject.x,

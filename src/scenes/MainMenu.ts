@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import { ParallaxBackground } from '../effects/ParallaxBackground';
+import { BloomPipeline } from '../effects/BloomPipeline';
 
 export class MainMenu extends Scene {
     private parallaxBackground: ParallaxBackground;
@@ -9,11 +10,8 @@ export class MainMenu extends Scene {
     }
 
     create() {
-        // Instantiate the parallax background manager.
+        // --- Background ---
         this.parallaxBackground = new ParallaxBackground(this);
-
-        // --- Final Parallax Configuration ---
-        // This now uses the high-contrast starfield for visibility, fixing the "still layer" bug.
         this.parallaxBackground.addLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.1,
@@ -23,6 +21,14 @@ export class MainMenu extends Scene {
             scrollSpeed: -0.5,
             alpha: 0.6,
         });
+
+        // --- Post-Processing ---
+        // Apply the bloom effect to the main menu camera for a consistent look.
+        (this.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines.addPostPipeline(
+            'Bloom',
+            BloomPipeline,
+        );
+        this.cameras.main.setPostPipeline('Bloom');
 
         this.add
             .text(512, 250, 'Legend of Cosmos III', {
@@ -50,7 +56,6 @@ export class MainMenu extends Scene {
     }
 
     update() {
-        // We must call the update method on our manager to make it scroll.
         this.parallaxBackground.update();
     }
 }
