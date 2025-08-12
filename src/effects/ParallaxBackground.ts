@@ -15,29 +15,37 @@ export class ParallaxBackground {
         this.scene = scene;
     }
 
-    // A public method to add a new layer to the background.
-    // It now includes an optional 'alpha' parameter for transparency.
-    public addLayer(textureKey: string, scrollSpeed: number, alpha: number = 1): void {
+    // The method to add a layer is now more powerful.
+    // It accepts optional alpha (transparency) and y (vertical offset) parameters.
+    public addLayer(config: {
+        textureKey: string;
+        scrollSpeed: number;
+        alpha?: number;
+        y?: number;
+    }): void {
         const { width, height } = this.scene.scale;
 
+        // Use provided values or set sensible defaults.
+        const yPos = config.y || 0;
+        const alpha = config.alpha || 1;
+
         const tileSprite = this.scene.add
-            .tileSprite(0, 0, width, height, textureKey)
+            .tileSprite(0, yPos, width, height, config.textureKey)
             .setOrigin(0, 0)
             .setScrollFactor(0)
-            .setAlpha(alpha); // Set the layer's transparency.
+            .setAlpha(alpha);
 
         this.layers.push({
             sprite: tileSprite,
-            scrollSpeed: scrollSpeed,
+            scrollSpeed: config.scrollSpeed,
         });
     }
 
-    // The update method should be called from the main Game scene's update loop.
+    // The update method scrolls each layer according to its speed.
     public update(): void {
         for (const layer of this.layers) {
-            // To make the background scroll down (making the ship appear to fly up),
-            // we increment the tilePositionY. This was correct before.
-            // The issue was the lack of transparency between layers.
+            // To make the background scroll "down" the screen, we INCREASE the tilePositionY.
+            // This gives the illusion that the player is flying "up".
             layer.sprite.tilePositionY += layer.scrollSpeed;
         }
     }
