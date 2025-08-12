@@ -1,16 +1,19 @@
 import { Scene } from 'phaser';
+import { ParallaxBackground } from '../../effects/ParallaxBackground'; // Import our new manager
 
 export class MainMenu extends Scene {
-    background: Phaser.GameObjects.TileSprite;
+    // A property to hold our background manager
+    private parallaxBackground: ParallaxBackground;
 
     constructor() {
         super('MainMenu');
     }
 
     create() {
-        this.background = this.add
-            .tileSprite(0, 0, this.scale.width, this.scale.height, 'scrolling-background')
-            .setOrigin(0, 0);
+        // Instantiate the parallax background manager, just like in the Game scene
+        this.parallaxBackground = new ParallaxBackground(this);
+        this.parallaxBackground.addLayer('stars-background', 0.25);
+        this.parallaxBackground.addLayer('nebula-background', 0.5);
 
         this.add
             .text(512, 250, 'Legend of Cosmos III', {
@@ -33,12 +36,13 @@ export class MainMenu extends Scene {
             .setOrigin(0.5);
 
         this.input.once('pointerdown', () => {
-            //this.sound.play('music', { loop: true, volume: 0.5 }); Remove Music for now
+            // this.sound.play('music', { loop: true, volume: 0.5 }); // Music disabled for now
             this.scene.start('Game');
         });
     }
 
     update() {
-        this.background.tilePositionY -= 0.5;
+        // We must call the update method on our manager to make it scroll
+        this.parallaxBackground.update();
     }
 }
