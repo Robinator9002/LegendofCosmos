@@ -1,9 +1,10 @@
 import { Scene, GameObjects } from 'phaser';
-import { Player } from '../game/objects/Player';
-import { Enemy } from '../game/objects/Enemy';
-import { Laser } from '../game/objects/Laser';
+import { Player } from '../objects/Player';
+import { Enemy } from '../objects/Enemy';
+import { Laser } from '../objects/Laser';
 import { ExplosionManager } from '../effects/ExplosionManager';
 import { ParallaxBackground } from '../effects/ParallaxBackground';
+import { BloomPipeline } from '../effects/BloomPipeline'; // Import the pipeline
 
 // The main Game scene, where all the action happens.
 export class Game extends Scene {
@@ -23,16 +24,22 @@ export class Game extends Scene {
     create() {
         // --- Background ---
         this.parallaxBackground = new ParallaxBackground(this);
-
-        // --- Corrected & Enhanced Parallax Configuration ---
-        // The distant stars move very slowly, almost stationary.
-        this.parallaxBackground.addLayer({ textureKey: 'stars-background', scrollSpeed: -0.05 });
-        // The closer nebula is semi-transparent and moves at a more relaxed pace.
+        this.parallaxBackground.addLayer({
+            textureKey: 'stars-background-contrast',
+            scrollSpeed: -0.1,
+        });
         this.parallaxBackground.addLayer({
             textureKey: 'nebula-background',
-            scrollSpeed: -0.4,
-            alpha: 0.7,
+            scrollSpeed: -0.5,
+            alpha: 0.6,
         });
+
+        // --- Post-Processing Effects ---
+        // We get the custom pipeline from the renderer by its key and add it to the camera.
+        const bloom = (this.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines.get(
+            'Bloom',
+        ) as BloomPipeline;
+        this.cameras.main.setPostPipeline(bloom);
 
         // --- Effects ---
         this.explosionManager = new ExplosionManager(this);
@@ -130,7 +137,7 @@ export class Game extends Scene {
             enemyObject.takeDamage(1);
 
             if (!enemyObject.active) {
-                this.score += enemyObject.getData('scoreValue') as number;
+                this.score += enemyObject.getData('value') as number;
                 this.scoreText.setText('Score: ' + this.score);
                 this.explosionManager.createExplosion(
                     enemyObject.x,

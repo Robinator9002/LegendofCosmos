@@ -13,8 +13,7 @@ export class MainMenu extends Scene {
         this.parallaxBackground = new ParallaxBackground(this);
 
         // --- Final Parallax Configuration ---
-        // This now matches the Game scene for a seamless transition.
-        // It uses the high-contrast starfield for visibility and slower speeds for a majestic feel.
+        // This now uses the high-contrast starfield for visibility, fixing the "still layer" bug.
         this.parallaxBackground.addLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.1,
