@@ -35,15 +35,20 @@ export class Preloader extends Scene {
         this.load.image('laser', 'PNG/Lasers/laserBlue01.png');
 
         // --- Load Debris and Effect Assets ---
-        // These are the specific parts our ExplosionManager will use.
-        // We give them simple, descriptive keys.
+        // Ship Parts
         this.load.image('part-wing-red', 'PNG/Parts/wingRed_0.png');
         this.load.image('part-cockpit-red', 'PNG/Parts/cockpitRed_0.png');
+
+        // Meteor Parts (NEW)
+        this.load.image('meteor-tiny-1', 'PNG/Meteors/meteorBrown_tiny1.png');
+        this.load.image('meteor-tiny-2', 'PNG/Meteors/meteorBrown_tiny2.png');
+
+        // Generic Parts (for future use)
         this.load.image('part-generic-1', 'PNG/Parts/spaceParts_015.png');
         this.load.image('part-generic-2', 'PNG/Parts/spaceParts_025.png');
         this.load.image('part-generic-3', 'PNG/Parts/spaceParts_035.png');
 
-        // Load the first frame of the fire animation for the smoke cloud effect.
+        // Smoke Cloud Effect
         this.load.image('fire0', 'PNG/Effects/fire00.png');
 
         // Audio
@@ -55,9 +60,6 @@ export class Preloader extends Scene {
 
     create() {
         //  Animations are no longer needed here since the ExplosionManager handles effects dynamically.
-        //  This keeps the Preloader's job simple: just load assets.
-
-        //  Move to the MainMenu
         this.scene.start('MainMenu');
     }
 }

@@ -11,7 +11,6 @@ export class ExplosionManager {
         this.scene = scene;
 
         // A dedicated physics group for all debris particles.
-        // This is more efficient than creating and destroying individual physics bodies repeatedly.
         this.debrisGroup = this.scene.physics.add.group();
     }
 
@@ -19,7 +18,6 @@ export class ExplosionManager {
     public createExplosion(x: number, y: number, enemyTextureKey: string): void {
         this.createCoreFlash(x, y);
         this.createDebris(x, y, enemyTextureKey);
-        this.createSmokeCloud(x, y);
 
         // Play the sound effect from here to keep all explosion logic together.
         this.scene.sound.play('explosion-sound', { volume: 0.4 });
@@ -30,12 +28,11 @@ export class ExplosionManager {
         const flash = this.scene.add.circle(x, y, 5, 0xffffff, 1);
 
         // Use the scene's tween manager to animate the flash.
-        // A tween is a lightweight way to animate an object's properties.
         this.scene.tweens.add({
             targets: flash,
-            radius: { from: 10, to: 50 },
+            radius: { from: 10, to: 60 }, // Slightly larger flash
             alpha: { from: 1, to: 0 },
-            duration: 150, // ms
+            duration: 150,
             onComplete: () => {
                 flash.destroy(); // Clean up the circle when the tween is done.
             },
@@ -44,7 +41,8 @@ export class ExplosionManager {
 
     // Creates the shattering debris effect.
     private createDebris(x: number, y: number, enemyTextureKey: string): void {
-        const debrisCount = Phaser.Math.Between(4, 8);
+        // Increased the debris count for a more impactful explosion.
+        const debrisCount = Phaser.Math.Between(6, 10);
         const partKeys = this.getIntelligentPartKeys(enemyTextureKey);
 
         for (let i = 0; i < debrisCount; i++) {
@@ -55,24 +53,27 @@ export class ExplosionManager {
                 randomPartKey,
             ) as Phaser.Physics.Arcade.Sprite;
 
-            debris.setScale(Phaser.Math.FloatBetween(0.3, 0.6));
+            // Ensure the body exists before manipulating it.
+            if (!debris.body) continue;
+
+            debris.setScale(Phaser.Math.FloatBetween(0.5, 1.0));
 
             // Give each piece a random outward velocity.
             const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            const speed = Phaser.Math.FloatBetween(150, 300);
-            if (debris.body) {
-                this.scene.physics.velocityFromRotation(angle, speed, debris.body.velocity);
-            }
+            const speed = Phaser.Math.FloatBetween(200, 400);
+            this.scene.physics.velocityFromRotation(angle, speed, debris.body.velocity);
 
             // Give it a random spin.
-            debris.setAngularVelocity(Phaser.Math.Between(-200, 200));
+            debris.setAngularVelocity(Phaser.Math.Between(-300, 300));
+            // Make debris ignore gravity, in case we ever add it globally.
+            (debris.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
 
             // Use a tween to fade out and destroy the debris after a short time.
             this.scene.tweens.add({
                 targets: debris,
                 alpha: 0,
-                duration: 800,
-                delay: 200,
+                duration: 1000,
+                delay: 300,
                 onComplete: () => {
                     debris.destroy();
                 },
@@ -80,31 +81,17 @@ export class ExplosionManager {
         }
     }
 
-    // Creates the lingering smoke cloud.
-    private createSmokeCloud(x: number, y: number): void {
-        const smoke = this.scene.add.sprite(x, y, 'fire0').setAlpha(0.6).setScale(0.5);
-
-        this.scene.tweens.add({
-            targets: smoke,
-            scale: { from: 0.5, to: 1.5 },
-            alpha: { from: 0.6, to: 0 },
-            duration: 1200,
-            onComplete: () => {
-                smoke.destroy();
-            },
-        });
-    }
-
     // This is the "intelligent" part. It selects appropriate debris based on the enemy's texture.
     private getIntelligentPartKeys(enemyTextureKey: string): string[] {
-        if (enemyTextureKey.includes('enemyRed')) {
+        // The key for our meteor is 'enemy-big'.
+        if (enemyTextureKey === 'enemy-big') {
+            // If it's a meteor, use tiny meteor parts.
+            return ['meteor-tiny-1', 'meteor-tiny-2'];
+        } else if (enemyTextureKey === 'enemy-medium') {
             // If it's a red ship, use red parts.
             return ['part-wing-red', 'part-cockpit-red'];
-        } else if (enemyTextureKey.includes('meteor')) {
-            // If it's a meteor, use generic metal parts.
-            return ['part-generic-1', 'part-generic-2', 'part-generic-3'];
         } else {
-            // Default to generic parts for any other enemy type.
+            // Default to generic parts for any other enemy type (like the player).
             return ['part-generic-1', 'part-generic-2', 'part-generic-3'];
         }
     }
