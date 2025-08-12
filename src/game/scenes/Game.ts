@@ -94,15 +94,17 @@ export class Game extends Scene {
         const x = Phaser.Math.Between(50, this.scale.width - 50);
         const enemyType = Phaser.Math.RND.pick(['enemy-medium', 'enemy-big']);
         const enemy = new Enemy(this, x, -50, enemyType);
+
+        // Add the enemy to the physics group. This gives it a body.
         this.enemies.add(enemy, true);
+
+        // NOW we can initialize it. This fixes the runtime error.
+        enemy.initialize();
     }
 
-    // The parameters are typed as generic GameObjects.
-    private laserHitEnemy(
-        laserObject: GameObjects.GameObject,
-        enemyObject: GameObjects.GameObject,
-    ) {
-        // We use 'instanceof' to safely check the type before casting. This is robust.
+    // The parameters are typed as 'any' to accept all possible types from the physics engine.
+    private laserHitEnemy(laserObject: any, enemyObject: any) {
+        // We use 'instanceof' to safely check the type before using our custom methods.
         if (laserObject instanceof Laser && enemyObject instanceof Enemy) {
             laserObject.destroy();
             enemyObject.takeDamage(1);
@@ -120,10 +122,7 @@ export class Game extends Scene {
         }
     }
 
-    private playerHitEnemy(
-        playerObject: GameObjects.GameObject,
-        enemyObject: GameObjects.GameObject,
-    ) {
+    private playerHitEnemy(playerObject: any, enemyObject: any) {
         if (playerObject instanceof Player && enemyObject instanceof Enemy) {
             // Prevent multiple hits from the same enemy
             enemyObject.destroy();
