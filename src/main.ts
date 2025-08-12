@@ -1,8 +1,8 @@
-import { Boot } from './game/scenes/Boot';
-import { Game } from './game/scenes/Game';
-import { GameOver } from './game/scenes/GameOver';
-import { MainMenu } from './game/scenes/MainMenu';
-import { Preloader } from './game/scenes/Preloader';
+import { Boot } from './scenes/Boot';
+import { Game } from './scenes/Game';
+import { GameOver } from './scenes/GameOver';
+import { MainMenu } from './scenes/MainMenu';
+import { Preloader } from './scenes/Preloader';
 import Phaser from 'phaser';
 
 // This is the main configuration file for your game.

@@ -7,7 +7,7 @@ export class Preloader extends Scene {
 
     init() {
         //  Display a background and a progress bar
-        this.add.image(512, 384, 'background');
+        this.add.image(512, 384, 'stars-background'); // Use the asset we loaded in Boot
         this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, 0xffffff);
         const bar = this.add.rectangle(512 - 230, 384, 4, 28, 0xffffff);
         this.load.on('progress', (progress: number) => {
@@ -22,7 +22,8 @@ export class Preloader extends Scene {
         // --- Load Game Assets ---
 
         // Parallax Background Layers
-        this.load.image('stars-background', 'Backgrounds/black.png');
+        // We are now loading the high-contrast version of the starfield.
+        this.load.image('stars-background-contrast', 'Backgrounds/black_contrast.png');
         this.load.image('nebula-background', 'Backgrounds/darkPurple.png');
 
         // Player
@@ -36,21 +37,15 @@ export class Preloader extends Scene {
         this.load.image('laser', 'PNG/Lasers/laserBlue01.png');
 
         // --- Load Debris and Effect Assets ---
-        // Ship Parts
         this.load.image('part-wing-red', 'PNG/Parts/wingRed_0.png');
         this.load.image('part-cockpit-red', 'PNG/Parts/cockpitRed_0.png');
-
-        // Meteor Parts
         this.load.image('meteor-tiny-1', 'PNG/Meteors/meteorBrown_tiny1.png');
         this.load.image('meteor-tiny-2', 'PNG/Meteors/meteorBrown_tiny2.png');
-
-        // Generic Parts
         this.load.image('part-generic-1', 'PNG/Parts/spaceParts_015.png');
         this.load.image('part-generic-2', 'PNG/Parts/spaceParts_025.png');
         this.load.image('part-generic-3', 'PNG/Parts/spaceParts_035.png');
 
         // Audio
-        // this.load.audio('music', 'Bonus/music.wav');
         this.load.audio('laser-sound', 'Bonus/sfx_laser1.ogg');
         this.load.audio('explosion-sound', 'Bonus/death.wav');
         this.load.audio('gameover-sound', 'Bonus/sfx_lose.ogg');

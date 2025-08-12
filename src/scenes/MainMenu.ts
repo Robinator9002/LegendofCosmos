@@ -1,8 +1,7 @@
 import { Scene } from 'phaser';
-import { ParallaxBackground } from '../../effects/ParallaxBackground'; // Import our new manager
+import { ParallaxBackground } from '../effects/ParallaxBackground';
 
 export class MainMenu extends Scene {
-    // A property to hold our background manager
     private parallaxBackground: ParallaxBackground;
 
     constructor() {
@@ -10,10 +9,21 @@ export class MainMenu extends Scene {
     }
 
     create() {
-        // Instantiate the parallax background manager, just like in the Game scene
+        // Instantiate the parallax background manager.
         this.parallaxBackground = new ParallaxBackground(this);
-        this.parallaxBackground.addLayer('stars-background', 0.25);
-        this.parallaxBackground.addLayer('nebula-background', 0.5);
+
+        // --- Final Parallax Configuration ---
+        // This now matches the Game scene for a seamless transition.
+        // It uses the high-contrast starfield for visibility and slower speeds for a majestic feel.
+        this.parallaxBackground.addLayer({
+            textureKey: 'stars-background-contrast',
+            scrollSpeed: -0.1,
+        });
+        this.parallaxBackground.addLayer({
+            textureKey: 'nebula-background',
+            scrollSpeed: -0.5,
+            alpha: 0.6,
+        });
 
         this.add
             .text(512, 250, 'Legend of Cosmos III', {
@@ -36,13 +46,12 @@ export class MainMenu extends Scene {
             .setOrigin(0.5);
 
         this.input.once('pointerdown', () => {
-            // this.sound.play('music', { loop: true, volume: 0.5 }); // Music disabled for now
             this.scene.start('Game');
         });
     }
 
     update() {
-        // We must call the update method on our manager to make it scroll
+        // We must call the update method on our manager to make it scroll.
         this.parallaxBackground.update();
     }
 }

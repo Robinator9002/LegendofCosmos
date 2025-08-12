@@ -1,14 +1,14 @@
 import { Scene, GameObjects } from 'phaser';
-import { Player } from '../objects/Player';
-import { Enemy } from '../objects/Enemy';
-import { Laser } from '../objects/Laser';
-import { ExplosionManager } from '../../effects/ExplosionManager';
-import { ParallaxBackground } from '../../effects/ParallaxBackground'; // Import the new class
+import { Player } from '../game/objects/Player';
+import { Enemy } from '../game/objects/Enemy';
+import { Laser } from '../game/objects/Laser';
+import { ExplosionManager } from '../effects/ExplosionManager';
+import { ParallaxBackground } from '../effects/ParallaxBackground';
 
 // The main Game scene, where all the action happens.
 export class Game extends Scene {
     // --- Scene Properties ---
-    private parallaxBackground: ParallaxBackground; // Property for the new manager
+    private parallaxBackground: ParallaxBackground;
     private player: Player;
     private enemies: Phaser.Physics.Arcade.Group;
     private playerLasers: Phaser.Physics.Arcade.Group;
@@ -22,11 +22,17 @@ export class Game extends Scene {
 
     create() {
         // --- Background ---
-        // The old TileSprite is gone. We now instantiate our manager.
         this.parallaxBackground = new ParallaxBackground(this);
-        // Add the layers. The background layer scrolls slower than the foreground.
-        this.parallaxBackground.addLayer('stars-background', 0.25);
-        this.parallaxBackground.addLayer('nebula-background', 0.5);
+
+        // --- Corrected & Enhanced Parallax Configuration ---
+        // The distant stars move very slowly, almost stationary.
+        this.parallaxBackground.addLayer({ textureKey: 'stars-background', scrollSpeed: -0.05 });
+        // The closer nebula is semi-transparent and moves at a more relaxed pace.
+        this.parallaxBackground.addLayer({
+            textureKey: 'nebula-background',
+            scrollSpeed: -0.4,
+            alpha: 0.7,
+        });
 
         // --- Effects ---
         this.explosionManager = new ExplosionManager(this);
@@ -71,7 +77,6 @@ export class Game extends Scene {
     }
 
     update() {
-        // We now call the update method of our parallax manager each frame.
         this.parallaxBackground.update();
         this.player.update();
 
@@ -99,24 +104,6 @@ export class Game extends Scene {
         enemy.initialize();
     }
 
-    private laserHitEnemy(laserObject: any, enemyObject: any) {
-        if (laserObject instanceof Laser && enemyObject instanceof Enemy) {
-            const enemyTextureKey = enemyObject.texture.key;
-            laserObject.destroy();
-            enemyObject.takeDamage(1);
-
-            if (!enemyObject.active) {
-                this.score += enemyObject.getData('scoreValue') as number;
-                this.scoreText.setText('Score: ' + this.score);
-                this.explosionManager.createExplosion(
-                    enemyObject.x,
-                    enemyObject.y,
-                    enemyTextureKey,
-                );
-            }
-        }
-    }
-
     private playerHitEnemy(playerObject: any, enemyObject: any) {
         if (playerObject instanceof Player && enemyObject instanceof Enemy) {
             const enemyTextureKey = enemyObject.texture.key;
@@ -133,6 +120,24 @@ export class Game extends Scene {
             this.time.delayedCall(500, () => {
                 this.scene.start('GameOver', { score: this.score });
             });
+        }
+    }
+
+    private laserHitEnemy(laserObject: any, enemyObject: any) {
+        if (laserObject instanceof Laser && enemyObject instanceof Enemy) {
+            const enemyTextureKey = enemyObject.texture.key;
+            laserObject.destroy();
+            enemyObject.takeDamage(1);
+
+            if (!enemyObject.active) {
+                this.score += enemyObject.getData('scoreValue') as number;
+                this.scoreText.setText('Score: ' + this.score);
+                this.explosionManager.createExplosion(
+                    enemyObject.x,
+                    enemyObject.y,
+                    enemyTextureKey,
+                );
+            }
         }
     }
 }
