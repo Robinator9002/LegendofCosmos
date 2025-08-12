@@ -21,8 +21,9 @@ export class Preloader extends Scene {
 
         // --- Load Game Assets ---
 
-        // Background
-        this.load.image('scrolling-background', 'Backgrounds/darkPurple.png');
+        // Parallax Background Layers
+        this.load.image('stars-background', 'Backgrounds/black.png');
+        this.load.image('nebula-background', 'Backgrounds/darkPurple.png');
 
         // Player
         this.load.image('player', 'PNG/Player/playerShip1_blue.png');
@@ -39,17 +40,14 @@ export class Preloader extends Scene {
         this.load.image('part-wing-red', 'PNG/Parts/wingRed_0.png');
         this.load.image('part-cockpit-red', 'PNG/Parts/cockpitRed_0.png');
 
-        // Meteor Parts (NEW)
+        // Meteor Parts
         this.load.image('meteor-tiny-1', 'PNG/Meteors/meteorBrown_tiny1.png');
         this.load.image('meteor-tiny-2', 'PNG/Meteors/meteorBrown_tiny2.png');
 
-        // Generic Parts (for future use)
+        // Generic Parts
         this.load.image('part-generic-1', 'PNG/Parts/spaceParts_015.png');
         this.load.image('part-generic-2', 'PNG/Parts/spaceParts_025.png');
         this.load.image('part-generic-3', 'PNG/Parts/spaceParts_035.png');
-
-        // Smoke Cloud Effect
-        this.load.image('fire0', 'PNG/Effects/fire00.png');
 
         // Audio
         // this.load.audio('music', 'Bonus/music.wav');
@@ -59,7 +57,6 @@ export class Preloader extends Scene {
     }
 
     create() {
-        //  Animations are no longer needed here since the ExplosionManager handles effects dynamically.
         this.scene.start('MainMenu');
     }
 }

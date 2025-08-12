@@ -10,9 +10,9 @@ export class Boot extends Scene {
     // The preload method is where we load assets.
     preload() {
         //  The Boot scene should load only the assets required for the Preloader scene.
-        //  In this case, we'll load a background image for the loading screen.
-        //  The path is relative to the 'public/assets' directory set in Preloader.ts.
-        this.load.image('background', 'assets/Backgrounds/blue.png');
+        //  We will load the 'stars-background' which will be used as the backdrop for the progress bar.
+        //  This fixes the issue where a non-existent 'background' key was being loaded.
+        this.load.image('stars-background', 'assets/Backgrounds/black.png');
     }
 
     // The create method is called once the preload is complete.

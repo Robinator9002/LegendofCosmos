@@ -3,11 +3,12 @@ import { Player } from '../objects/Player';
 import { Enemy } from '../objects/Enemy';
 import { Laser } from '../objects/Laser';
 import { ExplosionManager } from '../../effects/ExplosionManager';
+import { ParallaxBackground } from '../../effects/ParallaxBackground'; // Import the new class
 
 // The main Game scene, where all the action happens.
 export class Game extends Scene {
     // --- Scene Properties ---
-    private background: GameObjects.TileSprite;
+    private parallaxBackground: ParallaxBackground; // Property for the new manager
     private player: Player;
     private enemies: Phaser.Physics.Arcade.Group;
     private playerLasers: Phaser.Physics.Arcade.Group;
@@ -21,12 +22,13 @@ export class Game extends Scene {
 
     create() {
         // --- Background ---
-        this.background = this.add
-            .tileSprite(0, 0, this.scale.width, this.scale.height, 'scrolling-background')
-            .setOrigin(0, 0);
+        // The old TileSprite is gone. We now instantiate our manager.
+        this.parallaxBackground = new ParallaxBackground(this);
+        // Add the layers. The background layer scrolls slower than the foreground.
+        this.parallaxBackground.addLayer('stars-background', 0.25);
+        this.parallaxBackground.addLayer('nebula-background', 0.5);
 
         // --- Effects ---
-        // An instance of our new manager is created, passing it this scene.
         this.explosionManager = new ExplosionManager(this);
 
         // --- Physics Groups ---
@@ -69,7 +71,8 @@ export class Game extends Scene {
     }
 
     update() {
-        this.background.tilePositionY -= 0.5;
+        // We now call the update method of our parallax manager each frame.
+        this.parallaxBackground.update();
         this.player.update();
 
         // --- Cleanup ---
@@ -105,7 +108,6 @@ export class Game extends Scene {
             if (!enemyObject.active) {
                 this.score += enemyObject.getData('scoreValue') as number;
                 this.scoreText.setText('Score: ' + this.score);
-                // The old animation call is replaced with our new manager.
                 this.explosionManager.createExplosion(
                     enemyObject.x,
                     enemyObject.y,
@@ -118,18 +120,13 @@ export class Game extends Scene {
     private playerHitEnemy(playerObject: any, enemyObject: any) {
         if (playerObject instanceof Player && enemyObject instanceof Enemy) {
             const enemyTextureKey = enemyObject.texture.key;
-            // The enemy is destroyed immediately upon collision.
             enemyObject.destroy();
 
-            // Create an explosion for the enemy that was hit.
             this.explosionManager.createExplosion(enemyObject.x, enemyObject.y, enemyTextureKey);
-
-            // Create a larger explosion for the player.
             this.explosionManager.createExplosion(playerObject.x, playerObject.y, 'player');
 
             this.cameras.main.shake(500, 0.01);
             this.sound.play('gameover-sound');
-            // this.sound.stopByKey('music'); // Music is already disabled
 
             playerObject.disableBody(true, true);
 
