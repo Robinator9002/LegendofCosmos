@@ -8,19 +8,30 @@ export class GameOver extends Scene {
     }
 
     init(data: { score: number }) {
+        // Store the score passed from the Game scene
         this.score = data.score;
     }
 
     create() {
-        this.cameras.main.setBackgroundColor(0xff0000);
+        // --- Scene Styling ---
+        // Instead of a solid red, we'll use a dark tint on the main camera
+        // to create a somber but not jarring mood.
+        this.cameras.main.setBackgroundColor(0x000000);
 
-        this.add.image(512, 384, 'background').setAlpha(0.5);
+        // Use a background image that we know is loaded from the Preloader.
+        // This fixes the "asset not found" error.
+        this.add.image(512, 384, 'stars-background-contrast').setAlpha(0.4);
 
+        // A semi-transparent overlay to help the text stand out.
+        this.add.rectangle(512, 384, 1024, 768, 0x000000, 0.5);
+
+        // --- UI Text ---
+        // Consistent styling with the rest of the game's UI.
         this.add
             .text(512, 280, 'Game Over', {
                 fontFamily: 'Arial Black',
-                fontSize: 64,
-                color: '#ffffff',
+                fontSize: 72,
+                color: '#ff4444', // A more dramatic red color for the title
                 stroke: '#000000',
                 strokeThickness: 8,
                 align: 'center',
@@ -36,7 +47,8 @@ export class GameOver extends Scene {
             })
             .setOrigin(0.5);
 
-        this.add
+        // Add a pulsing effect to the "Restart" text to guide the player.
+        const restartText = this.add
             .text(512, 500, 'Click to Restart', {
                 fontFamily: 'Arial',
                 fontSize: 32,
@@ -45,6 +57,17 @@ export class GameOver extends Scene {
             })
             .setOrigin(0.5);
 
+        this.tweens.add({
+            targets: restartText,
+            alpha: 0.5,
+            ease: 'Cubic.easeInOut',
+            duration: 1000,
+            yoyo: true,
+            repeat: -1,
+        });
+
+        // --- Input Handling ---
+        // Go back to the MainMenu scene on a click/tap.
         this.input.once('pointerdown', () => {
             this.scene.start('MainMenu');
         });

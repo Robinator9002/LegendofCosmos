@@ -7,7 +7,7 @@ export class Preloader extends Scene {
 
     init() {
         //  Display a background and a progress bar
-        this.add.image(512, 384, 'stars-background'); // Use the asset we loaded in Boot
+        this.add.image(512, 384, 'stars-background-contrast');
         this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, 0xffffff);
         const bar = this.add.rectangle(512 - 230, 384, 4, 28, 0xffffff);
         this.load.on('progress', (progress: number) => {
@@ -22,7 +22,6 @@ export class Preloader extends Scene {
         // --- Load Game Assets ---
 
         // Parallax Background Layers
-        // We are now loading the high-contrast version of the starfield.
         this.load.image('stars-background-contrast', 'Backgrounds/black_contrast.png');
         this.load.image('nebula-background', 'Backgrounds/darkPurple.png');
 
@@ -44,6 +43,9 @@ export class Preloader extends Scene {
         this.load.image('part-generic-1', 'PNG/Parts/spaceParts_015.png');
         this.load.image('part-generic-2', 'PNG/Parts/spaceParts_025.png');
         this.load.image('part-generic-3', 'PNG/Parts/spaceParts_035.png');
+
+        // --- Player Engine Trail Particle (NEW) ---
+        this.load.image('engine-particle', 'PNG/Lasers/laserBlue07.png');
 
         // Audio
         this.load.audio('laser-sound', 'Bonus/sfx_laser1.ogg');

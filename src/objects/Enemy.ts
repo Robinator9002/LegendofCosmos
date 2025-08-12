@@ -1,46 +1,46 @@
 import Phaser from 'phaser';
+import { IEnemyType } from '../data/EnemyTypes'; // Import our new data structure
 
-// The Enemy class represents a generic enemy sprite.
-// It's designed to be extended or configured for different enemy types.
+// The Enemy class now represents a generic enemy sprite.
+// It is configured by the IEnemyType data passed into its constructor,
+// making it highly flexible and removing the need for hardcoded logic.
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
     // --- Class Properties ---
     private health: number;
 
-    constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
-        super(scene, x, y, texture);
+    // The constructor now accepts the full enemy data object.
+    constructor(scene: Phaser.Scene, x: number, y: number, enemyData: IEnemyType) {
+        // We pass the texture from the data object to the parent Sprite class.
+        super(scene, x, y, enemyData.texture);
 
-        // Note: We do NOT add the enemy to the scene or physics world here.
-        // The physics group in the Game scene will handle that.
+        // We can immediately set the health from the data.
+        this.health = enemyData.health;
 
-        // Initialize health to a default value. It will be set properly in initialize().
-        this.health = 1;
+        // The 'setData' method is a clean way to store arbitrary data on a GameObject.
+        // We'll store the score value here to be retrieved when the enemy is destroyed.
+        this.setData('scoreValue', enemyData.scoreValue);
     }
 
-    // This initialize method is a crucial part of the object lifecycle.
-    // It should be called AFTER the enemy has been added to its physics group.
-    // This ensures that the 'body' property exists before we try to use it.
-    public initialize(): void {
-        if (this.texture.key === 'enemy-big') {
-            this.health = 3;
-            this.setData('scoreValue', 50);
-            this.setVelocityY(Phaser.Math.Between(50, 100));
-            this.setScale(0.8);
-        } else {
-            // 'enemy-medium'
-            this.health = 1;
-            this.setData('scoreValue', 20);
-            this.setVelocityY(Phaser.Math.Between(100, 200));
-            this.setScale(0.6);
+    // The initialize method is now much cleaner. It simply applies the
+    // remaining properties from the data object.
+    public initialize(enemyData: IEnemyType): void {
+        // This check is crucial. It ensures the physics body has been created by the
+        // group before we try to manipulate it.
+        if (!this.body) {
+            console.error('Enemy body not found during initialization.');
+            return;
         }
+
+        // Apply scale and a random speed from the defined range.
+        this.setScale(enemyData.scale);
+        this.setVelocityY(Phaser.Math.Between(enemyData.speed.min, enemyData.speed.max));
     }
 
-    // A public method to allow other objects (like lasers) to damage this enemy.
+    // This method remains unchanged. It handles taking damage and destruction.
     public takeDamage(damage: number): void {
         this.health -= damage;
 
-        // If health drops to 0 or below, the enemy is destroyed.
         if (this.health <= 0) {
-            // 'destroy()' is a built-in Phaser method that removes the GameObject from the scene.
             this.destroy();
         }
     }

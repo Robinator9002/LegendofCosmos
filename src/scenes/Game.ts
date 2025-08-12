@@ -5,6 +5,8 @@ import { Laser } from '../objects/Laser';
 import { ExplosionManager } from '../effects/ExplosionManager';
 import { ParallaxBackground } from '../effects/ParallaxBackground';
 import { BloomPipeline } from '../effects/BloomPipeline';
+import { EngineTrail } from '../effects/EngineTrail';
+import { EnemyTypes } from '../data/EnemyTypes'; // Import our new enemy database
 
 // The main Game scene, where all the action happens.
 export class Game extends Scene {
@@ -17,6 +19,13 @@ export class Game extends Scene {
     private score: number;
     private scoreText: GameObjects.Text;
 
+    // --- Debug and Tuning Properties ---
+    private bloomPipeline: BloomPipeline;
+    private keyI: Phaser.Input.Keyboard.Key;
+    private keyO: Phaser.Input.Keyboard.Key;
+    private keyK: Phaser.Input.Keyboard.Key;
+    private keyL: Phaser.Input.Keyboard.Key;
+
     constructor() {
         super('Game');
     }
@@ -26,21 +35,21 @@ export class Game extends Scene {
         this.parallaxBackground = new ParallaxBackground(this);
         this.parallaxBackground.addLayer({
             textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.1,
+            scrollSpeed: 0.25,
         });
         this.parallaxBackground.addLayer({
             textureKey: 'nebula-background',
-            scrollSpeed: -0.5,
+            scrollSpeed: 0.5,
             alpha: 0.6,
         });
 
         // --- Post-Processing Effects ---
-        // This is the correct, modern way to add and apply a Post FX Pipeline.
-        (this.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines.addPostPipeline(
-            'Bloom',
-            BloomPipeline,
-        );
-        this.cameras.main.setPostPipeline('Bloom');
+        const renderer = this.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
+        if (renderer.pipelines) {
+            renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
+            this.cameras.main.setPostPipeline('Bloom');
+            this.bloomPipeline = this.cameras.main.getPostPipeline('Bloom') as BloomPipeline;
+        }
 
         // --- Effects ---
         this.explosionManager = new ExplosionManager(this);
@@ -56,6 +65,8 @@ export class Game extends Scene {
             this.scale.height - 100,
             this.playerLasers,
         );
+        // Create the engine trail as a local constant. This fixes the "unused variable" warning.
+        const engineTrail = new EngineTrail(this, this.player);
 
         // --- Spawning Enemies ---
         this.time.addEvent({
@@ -81,71 +92,109 @@ export class Game extends Scene {
             fontSize: '32px',
             fontFamily: 'Arial',
             color: '#FFF',
+            stroke: '#000',
+            strokeThickness: 4,
         });
+
+        // --- Debug Controls for Bloom ---
+        if (this.input.keyboard) {
+            this.keyI = this.input.keyboard.addKey('I');
+            this.keyO = this.input.keyboard.addKey('O');
+            this.keyK = this.input.keyboard.addKey('K');
+            this.keyL = this.input.keyboard.addKey('L');
+        }
     }
 
     update() {
+        if (!this.player || !this.player.active) {
+            return;
+        }
         this.parallaxBackground.update();
         this.player.update();
+        this.handleCleanup();
+        this.handleDebugInput();
+    }
 
-        // --- Cleanup ---
-        this.playerLasers.getChildren().forEach((laserObject: GameObjects.GameObject) => {
-            const laser = laserObject as Laser;
-            if (laser.y < -50) {
-                laser.destroy();
-            }
+    private handleCleanup() {
+        this.playerLasers.getChildren().forEach((laser) => {
+            if ((laser as Laser).y < -50) laser.destroy();
         });
-
-        this.enemies.getChildren().forEach((enemyObject: GameObjects.GameObject) => {
-            const enemy = enemyObject as Enemy;
-            if (enemy.y > this.scale.height + 50) {
-                enemy.destroy();
-            }
+        this.enemies.getChildren().forEach((enemy) => {
+            if ((enemy as Enemy).y > this.scale.height + 50) enemy.destroy();
         });
     }
 
+    // --- DATA-DRIVEN SPAWN LOGIC ---
     private spawnEnemy() {
+        // 1. Pick a random enemy type from our new data array.
+        const enemyData = Phaser.Math.RND.pick(EnemyTypes);
         const x = Phaser.Math.Between(50, this.scale.width - 50);
-        const enemyType = Phaser.Math.RND.pick(['enemy-medium', 'enemy-big']);
-        const enemy = new Enemy(this, x, -50, enemyType);
+
+        // 2. Create a new Enemy instance, passing the full data object to the constructor.
+        const enemy = new Enemy(this, x, -50, enemyData);
+
+        // 3. Add the enemy to the physics group.
         this.enemies.add(enemy, true);
-        enemy.initialize();
+
+        // 4. Call the initialize method, passing the data again to set physics properties.
+        enemy.initialize(enemyData);
     }
 
     private playerHitEnemy(playerObject: any, enemyObject: any) {
-        if (playerObject instanceof Player && enemyObject instanceof Enemy) {
-            const enemyTextureKey = enemyObject.texture.key;
-            enemyObject.destroy();
+        const player = playerObject as Player;
+        const enemy = enemyObject as Enemy;
 
-            this.explosionManager.createExplosion(enemyObject.x, enemyObject.y, enemyTextureKey);
-            this.explosionManager.createExplosion(playerObject.x, playerObject.y, 'player');
+        this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.texture.key);
+        this.explosionManager.createExplosion(player.x, player.y, 'player');
 
-            this.cameras.main.shake(500, 0.01);
-            this.sound.play('gameover-sound');
+        this.cameras.main.shake(500, 0.01);
+        this.sound.play('gameover-sound');
 
-            playerObject.disableBody(true, true);
+        player.destroy();
 
-            this.time.delayedCall(500, () => {
-                this.scene.start('GameOver', { score: this.score });
+        this.time.delayedCall(1000, () => {
+            this.scene.start('GameOver', { score: this.score });
+        });
+    }
+
+    private laserHitEnemy(laserObject: any, enemyObject: any) {
+        const laser = laserObject as Laser;
+        const enemy = enemyObject as Enemy;
+
+        laser.destroy();
+        enemy.takeDamage(1);
+
+        if (!enemy.active) {
+            this.score += enemy.getData('scoreValue') as number;
+            this.scoreText.setText('Score: ' + this.score);
+            this.cameras.main.shake(100, 0.005);
+            this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.texture.key);
+        } else {
+            enemy.setTint(0xff0000);
+            this.time.delayedCall(50, () => {
+                enemy.clearTint();
             });
         }
     }
 
-    private laserHitEnemy(laserObject: any, enemyObject: any) {
-        if (laserObject instanceof Laser && enemyObject instanceof Enemy) {
-            const enemyTextureKey = enemyObject.texture.key;
-            laserObject.destroy();
-            enemyObject.takeDamage(1);
+    private handleDebugInput() {
+        if (!this.bloomPipeline || !this.keyI) return;
 
-            if (!enemyObject.active) {
-                this.score += enemyObject.getData('scoreValue') as number;
-                this.scoreText.setText('Score: ' + this.score);
-                this.explosionManager.createExplosion(
-                    enemyObject.x,
-                    enemyObject.y,
-                    enemyTextureKey,
-                );
-            }
+        if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
+            this.bloomPipeline.intensity += 0.1;
+            console.log(`Bloom Intensity: ${this.bloomPipeline.intensity.toFixed(2)}`);
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keyO)) {
+            this.bloomPipeline.intensity -= 0.1;
+            console.log(`Bloom Intensity: ${this.bloomPipeline.intensity.toFixed(2)}`);
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keyK)) {
+            this.bloomPipeline.strength += 0.1;
+            console.log(`Bloom Strength: ${this.bloomPipeline.strength.toFixed(2)}`);
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keyL)) {
+            this.bloomPipeline.strength -= 0.1;
+            console.log(`Bloom Strength: ${this.bloomPipeline.strength.toFixed(2)}`);
         }
     }
 }
