@@ -2,6 +2,7 @@ import { Scene, GameObjects } from 'phaser';
 import { Player } from '../objects/Player';
 import { Enemy } from '../objects/Enemy';
 import { Laser } from '../objects/Laser';
+import { ExplosionManager } from '../../effects/ExplosionManager';
 
 // The main Game scene, where all the action happens.
 export class Game extends Scene {
@@ -10,6 +11,7 @@ export class Game extends Scene {
     private player: Player;
     private enemies: Phaser.Physics.Arcade.Group;
     private playerLasers: Phaser.Physics.Arcade.Group;
+    private explosionManager: ExplosionManager;
     private score: number;
     private scoreText: GameObjects.Text;
 
@@ -23,16 +25,13 @@ export class Game extends Scene {
             .tileSprite(0, 0, this.scale.width, this.scale.height, 'scrolling-background')
             .setOrigin(0, 0);
 
-        // --- Physics Groups ---
-        this.playerLasers = this.physics.add.group({
-            classType: Laser,
-            runChildUpdate: true,
-        });
+        // --- Effects ---
+        // An instance of our new manager is created, passing it this scene.
+        this.explosionManager = new ExplosionManager(this);
 
-        this.enemies = this.physics.add.group({
-            classType: Enemy,
-            runChildUpdate: true,
-        });
+        // --- Physics Groups ---
+        this.playerLasers = this.physics.add.group({ classType: Laser, runChildUpdate: true });
+        this.enemies = this.physics.add.group({ classType: Enemy, runChildUpdate: true });
 
         // --- Player ---
         this.player = new Player(
@@ -51,7 +50,6 @@ export class Game extends Scene {
         });
 
         // --- Collisions ---
-        // The overlap callback is now correctly defined.
         this.physics.add.overlap(
             this.playerLasers,
             this.enemies,
@@ -94,48 +92,44 @@ export class Game extends Scene {
         const x = Phaser.Math.Between(50, this.scale.width - 50);
         const enemyType = Phaser.Math.RND.pick(['enemy-medium', 'enemy-big']);
         const enemy = new Enemy(this, x, -50, enemyType);
-
-        // Add the enemy to the physics group. This gives it a body.
         this.enemies.add(enemy, true);
-
-        // NOW we can initialize it. This fixes the runtime error.
         enemy.initialize();
     }
 
-    // The parameters are typed as 'any' to accept all possible types from the physics engine.
     private laserHitEnemy(laserObject: any, enemyObject: any) {
-        // We use 'instanceof' to safely check the type before using our custom methods.
         if (laserObject instanceof Laser && enemyObject instanceof Enemy) {
+            const enemyTextureKey = enemyObject.texture.key;
             laserObject.destroy();
             enemyObject.takeDamage(1);
 
             if (!enemyObject.active) {
                 this.score += enemyObject.getData('scoreValue') as number;
                 this.scoreText.setText('Score: ' + this.score);
-
-                const explosion = this.add
-                    .sprite(enemyObject.x, enemyObject.y, 'explosion')
-                    .setScale(enemyObject.scale);
-                explosion.play('explode');
-                this.sound.play('explosion-sound', { volume: 0.4 });
+                // The old animation call is replaced with our new manager.
+                this.explosionManager.createExplosion(
+                    enemyObject.x,
+                    enemyObject.y,
+                    enemyTextureKey,
+                );
             }
         }
     }
 
     private playerHitEnemy(playerObject: any, enemyObject: any) {
         if (playerObject instanceof Player && enemyObject instanceof Enemy) {
-            // Prevent multiple hits from the same enemy
+            const enemyTextureKey = enemyObject.texture.key;
+            // The enemy is destroyed immediately upon collision.
             enemyObject.destroy();
 
-            const explosion = this.add
-                .sprite(playerObject.x, playerObject.y, 'explosion')
-                .setScale(1.5);
-            explosion.play('explode');
+            // Create an explosion for the enemy that was hit.
+            this.explosionManager.createExplosion(enemyObject.x, enemyObject.y, enemyTextureKey);
+
+            // Create a larger explosion for the player.
+            this.explosionManager.createExplosion(playerObject.x, playerObject.y, 'player');
 
             this.cameras.main.shake(500, 0.01);
-            this.sound.play('explosion-sound');
             this.sound.play('gameover-sound');
-            this.sound.stopByKey('music');
+            // this.sound.stopByKey('music'); // Music is already disabled
 
             playerObject.disableBody(true, true);
 
