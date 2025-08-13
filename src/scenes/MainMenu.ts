@@ -19,9 +19,9 @@ export class MainMenu extends Scene {
         // Instantiate the upgraded ParallaxBackground class.
         this.parallaxBackground = new ParallaxBackground(this);
 
-        // --- FINAL Background Layer Composition ---
-        // This logic mirrors the Game scene to create the same optical illusion.
-        // We use slightly slower speeds for a calmer, more cinematic feel on the menu.
+        // --- FINAL Background Layer Composition (Brighter) ---
+        // The tint values have been increased to make the overall scene brighter
+        // and more visually appealing, per your feedback.
 
         // Layer 1 (Drawn First -> Perceived as FOREGROUND): Fast, Bright, Opaque.
         this.parallaxBackground.addTileSpriteLayer({
@@ -31,20 +31,20 @@ export class MainMenu extends Scene {
             alpha: 1.0,
         });
 
-        // Layer 2 (Middle Layer): Medium speed, medium brightness.
+        // Layer 2 (Middle Layer): Medium speed, brighter tint.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.3, // Slower speed.
-            tint: 0xaaaaaa, // Medium gray tint for reduced brightness.
-            alpha: 0.8,
+            tint: 0xcccccc, // A much brighter gray for better visibility.
+            alpha: 0.9,
         });
 
-        // Layer 3 (Drawn Last -> Perceived as BACKGROUND): Slow, Dark, Transparent.
+        // Layer 3 (Drawn Last -> Perceived as BACKGROUND): Slow, now much brighter.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.1, // Very slow for a distant feel.
-            tint: 0x555555, // Dark gray tint for a deep space feel.
-            alpha: 0.6,
+            tint: 0x999999, // A brighter dark gray to make the stars pop.
+            alpha: 0.8,
         });
 
         // --- Post-Processing ---

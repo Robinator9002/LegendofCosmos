@@ -39,32 +39,32 @@ export class Game extends Scene {
         // Instantiate the upgraded ParallaxBackground class.
         this.parallaxBackground = new ParallaxBackground(this);
 
-        // --- FINAL Background Layer Composition ---
-        // We now use both tint and alpha to create the correct optical illusion.
-        // The random offsets are now handled automatically by the ParallaxBackground class.
+        // --- FINAL Background Layer Composition (Brighter) ---
+        // This logic now mirrors the MainMenu's brightness for consistency,
+        // but uses faster scroll speeds for a more intense gameplay feel.
 
         // Layer 1 (Drawn First -> Perceived as FOREGROUND): Fast, Bright, Opaque.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.7, // Negative value to scroll DOWN, fast speed.
+            scrollSpeed: -0.7, // Fast speed for gameplay.
             tint: 0xffffff, // Full brightness (white).
             alpha: 1.0,
         });
 
-        // Layer 2 (Middle Layer): Medium speed, medium brightness.
+        // Layer 2 (Middle Layer): Medium speed, brighter tint.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.4, // Slower speed.
-            tint: 0xaaaaaa, // Medium gray tint for reduced brightness.
-            alpha: 0.8,
+            scrollSpeed: -0.4, // Medium speed.
+            tint: 0xcccccc, // A much brighter gray for better visibility.
+            alpha: 0.9,
         });
 
-        // Layer 3 (Drawn Last -> Perceived as BACKGROUND): Slow, Dark, Transparent.
+        // Layer 3 (Drawn Last -> Perceived as BACKGROUND): Slow, now much brighter.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.2, // Very slow speed.
-            tint: 0x555555, // Dark gray tint for a deep space feel.
-            alpha: 0.6,
+            scrollSpeed: -0.2, // Slow speed for distant stars.
+            tint: 0x999999, // A brighter dark gray to make the stars pop.
+            alpha: 0.8,
         });
 
         // --- Post-Processing Effects ---
