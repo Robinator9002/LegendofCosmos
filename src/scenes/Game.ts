@@ -7,6 +7,7 @@ import { ParallaxBackground } from '../effects/ParallaxBackground';
 import { BloomPipeline } from '../effects/BloomPipeline';
 import { EnemyTypes } from '../data/EnemyTypes';
 import { EngineTrail } from '../effects/EngineTrail';
+import { AsteroidPipeline } from '../effects/AsteroidPipeline'; // Import the new pipeline
 
 /**
  * @class Game
@@ -36,43 +37,42 @@ export class Game extends Scene {
 
     create() {
         // --- Background ---
-        // Instantiate the upgraded ParallaxBackground class.
         this.parallaxBackground = new ParallaxBackground(this);
-
-        // --- FINAL Background Layer Composition using Additive Blending ---
-        // This is the definitive solution. We use 'ADD' blend mode to make the
-        // layers brighter, solving the darkness issue permanently.
-
-        // Layer 1 (Base Layer): A solid, dark layer of stars. This is our canvas.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.1,
-            tint: 0x444444, // A dark, subtle base.
+            tint: 0x444444,
             blendMode: 'NORMAL',
         });
-
-        // Layer 2 (Additive): A brighter layer that ADDS its light to the base.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.4,
-            tint: 0xbbbbbb, // Bright tint.
-            blendMode: 'ADD', // This is the key to making the stars pop.
+            tint: 0xbbbbbb,
+            blendMode: 'ADD',
         });
-
-        // Layer 3 (Additive, Foreground): The fastest and brightest layer.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.7,
-            tint: 0xffffff, // Full brightness.
+            tint: 0xffffff,
             blendMode: 'ADD',
         });
 
         // --- Post-Processing Effects ---
         const renderer = this.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
         if (renderer.pipelines) {
+            // Register the global Bloom pipeline for the whole scene.
             renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
             this.cameras.main.setPostPipeline('Bloom');
             this.bloomPipeline = this.cameras.main.getPostPipeline('Bloom') as BloomPipeline;
+
+            // --- REGISTER THE NEW ASTEROID PIPELINE ---
+            // We register the AsteroidPipeline with a unique key. This makes it available
+            // to be used by any game object in this scene, but it won't be applied
+            // automatically. We will apply it selectively in the Enemy class.
+            if (!renderer.pipelines.get('Asteroid')) {
+                // CORRECTED: We must pass an INSTANCE of the pipeline, not the class itself.
+                renderer.pipelines.add('Asteroid', new AsteroidPipeline(this.game));
+            }
         }
 
         // --- Game Object Managers and Groups ---
@@ -182,7 +182,7 @@ export class Game extends Scene {
         } else {
             enemy.setTint(0xff0000);
             this.time.delayedCall(50, () => {
-                enemy.setTint(0xcccccc);
+                enemy.setTint(0xaaaaaa);
             });
         }
     }

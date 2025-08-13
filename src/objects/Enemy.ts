@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { IEnemyType } from '../data/EnemyTypes'; // Import our new data structure
+import { AsteroidPipeline } from '../effects/AsteroidPipeline'; // We need to import this to use it as a type
 
 // The Enemy class now represents a generic enemy sprite.
 // It is configured by the IEnemyType data passed into its constructor,
@@ -19,6 +20,25 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         // The 'setData' method is a clean way to store arbitrary data on a GameObject.
         // We'll store the score value here to be retrieved when the enemy is destroyed.
         this.setData('scoreValue', enemyData.scoreValue);
+
+        // --- APPLY ASTEROID SHADER ---
+        // We check if this enemy is the 'enemy-big' type (our asteroid).
+        // This is a clean, data-driven way to apply special effects.
+        if (enemyData.key === 'enemy-big') {
+            // We get the Asteroid pipeline we registered in Game.ts.
+            // CORRECTED: We use a type assertion 'as AsteroidPipeline' to tell TypeScript
+            // the specific type of pipeline we are retrieving. This resolves the error.
+            const pipeline = (
+                this.scene.renderer as Phaser.Renderer.WebGL.WebGLRenderer
+            ).pipelines.get('Asteroid') as AsteroidPipeline;
+            if (pipeline) {
+                // We apply the pipeline directly to this specific sprite.
+                // This is a Post FX Pipeline, so it affects the sprite after it's drawn.
+                this.setPostPipeline(pipeline);
+            }
+        }
+        
+        // For all enemies, we apply the standard "dimming" tint.
         this.setTint(0xaaaaaa);
     }
 
