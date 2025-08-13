@@ -66,7 +66,7 @@ export class Game extends Scene {
             this.playerLasers,
         );
         // Create the engine trail as a local constant. This fixes the "unused variable" warning.
-        const engineTrail = new EngineTrail(this, this.player);
+        new EngineTrail(this, this.player);
 
         // --- Spawning Enemies ---
         this.time.addEvent({
