@@ -16,25 +16,32 @@ export class ExplosionManager {
 
     /**
      * @method createImpactEffect
-     * @description Creates a small, satisfying spark effect at a given position.
-     * This is called when a laser hits an enemy to provide better visual feedback.
+     * @description Creates a much larger, more impactful, and correctly colored spark effect.
      * @param {number} x - The x-coordinate of the impact.
      * @param {number} y - The y-coordinate of the impact.
      */
     public createImpactEffect(x: number, y: number): void {
-        // We can reuse the 'engine-particle' for our sparks. It's a good, small, glowing dot.
         const particles = this.scene.add.particles(x, y, 'engine-particle', {
-            speed: { min: -100, max: 100 }, // Sparks fly out in all directions.
-            angle: { min: 0, max: 360 },
-            scale: { start: 0.5, end: 0 }, // Sparks shrink to nothing.
-            blendMode: 'ADD', // Additive blending makes them glow brightly.
-            lifespan: 200, // Sparks are very short-lived.
-            gravityY: 0,
-            quantity: 5, // A small burst of 5 sparks.
+            // --- Directionality ---
+            // The laser comes from the bottom (angle ~270 deg), so the impact should
+            // spray downwards (angle ~90 deg). We create a 60-degree cone facing down.
+            angle: { min: 60, max: 120 },
+
+            // --- Impactfulness (Increased) ---
+            speed: { min: 200, max: 350 }, // Faster particles.
+            quantity: 20, // More particles for a denser burst.
+            lifespan: 400, // Sparks last a bit longer.
+            scale: { start: 1.0, end: 0 }, // Sparks start larger.
+
+            // --- Visuals (Corrected Color) ---
+            blendMode: 'ADD',
+            // The tint now correctly reflects the blue laser color, cooling from
+            // a bright, hot blue-white to a deeper blue.
+            tint: { start: 0xaaaaff, end: 0x0000ff },
         });
 
         // The emitter will fire its burst of particles and then be removed from the scene.
-        particles.explode(5);
+        particles.explode(20);
     }
 
     /**
@@ -52,7 +59,7 @@ export class ExplosionManager {
 
     private createCoreFlash(x: number, y: number): void {
         const flash = this.scene.add.circle(x, y, 5, 0xffffff, 1);
-        flash.setBlendMode('ADD'); // Make the core flash glow intensely.
+        flash.setBlendMode('ADD');
 
         this.scene.tweens.add({
             targets: flash,
@@ -101,7 +108,7 @@ export class ExplosionManager {
         if (!debris.body) return;
 
         debris.setScale(Phaser.Math.FloatBetween(scaleRange.min, scaleRange.max));
-        debris.setTint(0xaaaaaa); // Debris should not be full brightness.
+        debris.setTint(0xaaaaaa);
 
         const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
         const speed = Phaser.Math.FloatBetween(200, 400);
