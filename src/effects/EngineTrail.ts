@@ -1,51 +1,84 @@
-import { Scene, GameObjects } from 'phaser';
+import { Scene, GameObjects, Math as pMath } from 'phaser';
 
-// This class manages the particle emitter for the player's engine trail.
-// It creates a visually appealing thrust effect that follows the player's ship.
+/**
+ * @interface IEngineTrailConfig
+ * @description Defines the configurable properties for an engine trail, allowing for different visual styles.
+ */
+export interface IEngineTrailConfig {
+    tint: { start: number; end: number };
+    scale: { start: number; end: number };
+    speed: { min: number; max: number };
+    lifespan: number;
+    frequency: number;
+}
+
+/**
+ * @class EngineTrail
+ * @description Manages a sophisticated particle emitter for a ship's engine trail.
+ * The trail's angle dynamically adjusts based on the target's velocity.
+ */
 export class EngineTrail {
     private scene: Scene;
     private emitter: GameObjects.Particles.ParticleEmitter;
-    private target: GameObjects.Sprite;
+    private target: GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body }; // Ensure target has a body
+    private lifespan: number; // Store the lifespan locally to avoid type issues.
 
-    constructor(scene: Scene, target: GameObjects.Sprite) {
+    constructor(scene: Scene, target: GameObjects.Sprite, config: IEngineTrailConfig) {
         this.scene = scene;
-        this.target = target;
+        this.target = target as any; // Cast to ensure body property is accessible
+        this.lifespan = config.lifespan; // Store the lifespan from the config.
 
-        // --- Corrected Emitter Creation ---
-        // The 'this.scene.add.particles' method, when given a full configuration object,
-        // is a factory that directly creates and returns a configured ParticleEmitter instance.
-        // There is no need to access a separate manager or list.
-        // This direct assignment resolves all previous TypeScript errors.
         this.emitter = this.scene.add.particles(0, 0, 'engine-particle', {
-            // The speed at which particles are fired. A range creates a more natural look.
-            speed: { min: 50, max: 100 },
-
-            // The angle of emission. 90 degrees is straight down from the emitter's origin.
-            angle: { min: 85, max: 95 },
-
-            // How the particle's scale changes over its life. It starts larger and shrinks to nothing.
-            scale: { start: 0.6, end: 0 },
-
-            // How the particle's transparency changes over its life. It fades out completely.
-            alpha: { start: 1, end: 0 },
-
-            // --- Visual Polish ---
-            // The lifespan of each particle in milliseconds. Increased for a longer trail.
-            lifespan: 400,
-
-            // A color tint that changes over the particle's life.
-            // Starts as a hot white-blue and cools to a deep purple, matching the nebula.
-            tint: { start: 0x88ddff, end: 0x6600cc },
-
-            // How particles are blended with the scene. 'ADD' creates a bright, glowing effect.
+            speed: config.speed,
+            scale: config.scale,
+            lifespan: this.lifespan, // Use the stored value.
+            tint: config.tint,
+            frequency: config.frequency,
+            quantity: 1,
             blendMode: 'ADD',
-
-            // The frequency of particle emission. A lower number means more particles.
-            frequency: 80,
+            // The angle is now controlled dynamically in the update method.
         });
+    }
 
-        // The emitter will follow the target sprite.
-        // The offset positions the trail correctly at the back of the ship's engine.
-        this.emitter.startFollow(this.target, 0, this.target.height / 2 - 5);
+    /**
+     * @method update
+     * @description Called every frame to update the emitter's position and angle.
+     */
+    public update(): void {
+        if (!this.target.active) {
+            // If the target is no longer active, stop emitting.
+            this.emitter.stop();
+            return;
+        }
+
+        // Keep the emitter positioned at the back of the target sprite.
+        this.emitter.setPosition(this.target.x, this.target.y + this.target.displayHeight / 2);
+
+        // --- DYNAMIC ANGLE CALCULATION ---
+        // This is the core of the new "banking" effect.
+        const velocity = this.target.body.velocity;
+        if (velocity.length() > 0) {
+            // We get the angle of the ship's velocity vector.
+            const angle = velocity.angle();
+            // We convert it from radians to degrees and make it point opposite to the velocity.
+            // The +90 degrees corrects for Phaser's coordinate system (0 degrees is to the right).
+            this.emitter.setAngle(pMath.RadToDeg(angle) + 90);
+        } else {
+            // If the ship is not moving, the trail points straight down.
+            this.emitter.setAngle(90);
+        }
+    }
+
+    /**
+     * @method destroy
+     * @description Stops and removes the particle emitter, allowing existing particles to fade out.
+     */
+    public destroy(): void {
+        this.emitter.stop();
+        // CORRECTED AGAIN: We now use the locally stored 'lifespan' property,
+        // which is guaranteed to be a simple number, resolving the type error.
+        this.scene.time.delayedCall(this.lifespan, () => {
+            this.emitter.destroy();
+        });
     }
 }
