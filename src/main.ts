@@ -7,7 +7,7 @@ import Phaser from 'phaser';
 
 // This is the main configuration file for your game.
 const config: Phaser.Types.Core.GameConfig = {
-    type: Phaser.WEBGL,
+    type: Phaser.WEBGL, // Ensure we are using WebGL
     width: 1024,
     height: 768,
     parent: 'game-container',
@@ -23,8 +23,6 @@ const config: Phaser.Types.Core.GameConfig = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    // The incorrect pipeline property has been removed.
-    // We will register and apply the Post FX Pipeline within the Game scene itself.
     scene: [Boot, Preloader, MainMenu, Game, GameOver],
 };
 
