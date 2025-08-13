@@ -19,6 +19,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         // The 'setData' method is a clean way to store arbitrary data on a GameObject.
         // We'll store the score value here to be retrieved when the enemy is destroyed.
         this.setData('scoreValue', enemyData.scoreValue);
+        this.setTint(0xaaaaaa);
     }
 
     // The initialize method is now much cleaner. It simply applies the

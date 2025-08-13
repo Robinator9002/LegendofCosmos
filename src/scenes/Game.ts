@@ -172,7 +172,8 @@ export class Game extends Scene {
         } else {
             enemy.setTint(0xff0000);
             this.time.delayedCall(50, () => {
-                enemy.clearTint();
+                // Set the tint back to our standard 'dimmed' color instead of clearing it.
+                enemy.setTint(0xaaaaaa);
             });
         }
     }

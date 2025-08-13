@@ -7,7 +7,7 @@ import Phaser from 'phaser';
 
 // This is the main configuration file for your game.
 const config: Phaser.Types.Core.GameConfig = {
-    type: Phaser.AUTO,
+    type: Phaser.WEBGL,
     width: 1024,
     height: 768,
     parent: 'game-container',

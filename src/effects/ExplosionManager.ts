@@ -88,6 +88,7 @@ export class ExplosionManager {
 
         // Use the provided scale range to set the size of the debris.
         debris.setScale(Phaser.Math.FloatBetween(scaleRange.min, scaleRange.max));
+        debris.setTint(0xaaaaaa);
 
         const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
         const speed = Phaser.Math.FloatBetween(200, 400);

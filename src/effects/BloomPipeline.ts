@@ -67,8 +67,8 @@ export class BloomPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipelin
 
         // --- Corrected Values ---
         // These are much more subtle and will produce a visible glow instead of a white screen.
-        this._intensity = 0.6; // How bright the glow is
-        this._strength = 0.4; // How much of the original brightness is required to trigger the glow
+        this._intensity = 5; // How bright the glow is
+        this._strength = 0.25; // How much of the original brightness is required to trigger the glow
     }
 
     onPreRender() {

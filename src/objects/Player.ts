@@ -31,6 +31,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
         // Set visual and physical properties.
         this.setScale(0.75);
+        this.setTint(0xaaaaaa);
         this.setCollideWorldBounds(true);
 
         // --- Input Setup ---
