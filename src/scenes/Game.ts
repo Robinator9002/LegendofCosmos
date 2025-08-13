@@ -8,14 +8,13 @@ import { BloomPipeline } from '../effects/BloomPipeline';
 import { EnemyTypes } from '../data/EnemyTypes';
 import { EngineTrail } from '../effects/EngineTrail';
 import { AsteroidPipeline } from '../effects/AsteroidPipeline';
+import { VignettePipeline } from '../effects/VignettePipeline'; // Import the new Vignette pipeline
 
 /**
  * @class Game
- * @description The main game scene where all the action happens. It manages the player,
- * enemies, scoring, and all core gameplay mechanics.
+ * @description The main game scene, now with more polish.
  */
 export class Game extends Scene {
-    // --- Scene Properties ---
     private parallaxBackground: ParallaxBackground;
     private player: Player;
     private enemies: Phaser.Physics.Arcade.Group;
@@ -31,47 +30,45 @@ export class Game extends Scene {
     create() {
         // --- Background ---
         this.parallaxBackground = new ParallaxBackground(this);
-
-        // --- FINAL Background Layer Composition with Rotation ---
-        // We now add a unique rotation to each layer to break up the repeating patterns.
-        // This creates a much more natural and less uniform-looking starfield.
-
-        // Layer 1 (Base Layer):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.1,
             tint: 0x444444,
             blendMode: 'NORMAL',
-            rotation: 0.2, // A slight rotation.
+            rotation: 0.2,
         });
-
-        // Layer 2 (Additive):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.4,
             tint: 0xbbbbbb,
             blendMode: 'ADD',
-            rotation: -0.5, // A different rotation in the opposite direction.
+            rotation: -0.5,
         });
-
-        // Layer 3 (Additive, Foreground):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.7,
             tint: 0xffffff,
             blendMode: 'ADD',
-            rotation: 1.1, // A more significant rotation.
+            rotation: 1.1,
         });
 
         // --- Post-Processing Effects ---
         const renderer = this.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
         if (renderer.pipelines) {
-            renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
-            this.cameras.main.setPostPipeline('Bloom');
-
+            // Register all our custom pipelines.
+            if (!renderer.pipelines.get('Bloom')) {
+                renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
+            }
             if (!renderer.pipelines.get('Asteroid')) {
                 renderer.pipelines.add('Asteroid', new AsteroidPipeline(this.game));
             }
+            if (!renderer.pipelines.get('Vignette')) {
+                renderer.pipelines.addPostPipeline('Vignette', VignettePipeline);
+            }
+
+            // Apply the pipelines to the main camera. The order is important.
+            // Bloom runs first, then the Vignette darkens the final bloomed image.
+            this.cameras.main.setPostPipeline(['Bloom', 'Vignette']);
         }
 
         // --- Game Object Managers and Groups ---
@@ -160,6 +157,10 @@ export class Game extends Scene {
     private laserHitEnemy(laserObject: any, enemyObject: any) {
         const laser = laserObject as Laser;
         const enemy = enemyObject as Enemy;
+
+        // --- ADDED IMPACT EFFECT ---
+        // When a laser hits an enemy, we now create a satisfying spark effect.
+        this.explosionManager.createImpactEffect(laser.x, laser.y);
 
         laser.destroy();
         enemy.takeDamage(1);
