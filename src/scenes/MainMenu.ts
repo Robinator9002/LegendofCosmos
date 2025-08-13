@@ -19,32 +19,32 @@ export class MainMenu extends Scene {
         // Instantiate the upgraded ParallaxBackground class.
         this.parallaxBackground = new ParallaxBackground(this);
 
-        // --- FINAL Background Layer Composition (Brighter) ---
-        // The tint values have been increased to make the overall scene brighter
-        // and more visually appealing, per your feedback.
+        // --- FINAL Background Layer Composition using Additive Blending ---
+        // This logic mirrors the Game scene to create a bright, consistent look,
+        // but uses slower speeds for a more cinematic feel on the menu.
 
-        // Layer 1 (Drawn First -> Perceived as FOREGROUND): Fast, Bright, Opaque.
+        // Layer 1 (Base Layer): A solid, dark layer of stars. This is our canvas.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.5, // Slower than in-game for a tranquil menu.
-            tint: 0xffffff, // Full brightness (white).
-            alpha: 1.0,
+            scrollSpeed: -0.05, // Very slow for the menu.
+            tint: 0x444444, // A dark, subtle base.
+            blendMode: 'NORMAL',
         });
 
-        // Layer 2 (Middle Layer): Medium speed, brighter tint.
+        // Layer 2 (Additive): A brighter layer that ADDS its light to the base.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.3, // Slower speed.
-            tint: 0xcccccc, // A much brighter gray for better visibility.
-            alpha: 0.9,
+            scrollSpeed: -0.2,
+            tint: 0xbbbbbb, // Bright tint.
+            blendMode: 'ADD', // This is the key to making the stars pop.
         });
 
-        // Layer 3 (Drawn Last -> Perceived as BACKGROUND): Slow, now much brighter.
+        // Layer 3 (Additive, Foreground): The fastest and brightest layer.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.1, // Very slow for a distant feel.
-            tint: 0x999999, // A brighter dark gray to make the stars pop.
-            alpha: 0.8,
+            scrollSpeed: -0.4,
+            tint: 0xffffff, // Full brightness.
+            blendMode: 'ADD',
         });
 
         // --- Post-Processing ---
