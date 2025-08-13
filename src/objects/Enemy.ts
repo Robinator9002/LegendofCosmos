@@ -26,21 +26,30 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
                 this.setPostPipeline(pipeline);
             }
         } else {
-            // All other enemies get a standard tint and an engine trail.
-            this.setTint(0xaaaaaa);
-
-            // Define a configuration for the enemy's trail to make it less powerful than the player's.
+            // --- REVISED ENEMY TRAIL CONFIG ---
+            // This configuration has been completely overhauled for a more powerful and menacing look.
             const enemyTrailConfig: IEngineTrailConfig = {
-                tint: { start: 0xffaaaa, end: 0xff0000 }, // A menacing red glow.
-                scale: { start: 0.5, end: 0 }, // Smaller than the player's.
-                speed: { min: 50, max: 90 }, // Slower particles.
-                lifespan: 400, // A shorter trail.
-                frequency: 90, // Less frequent particles.
+                // A fiery orange-to-red gradient. This will look much more "hot" and
+                // distinctly red against the dark background.
+                tint: { start: 0xff8800, end: 0xff0000 },
+                // A larger, more substantial trail.
+                scale: { start: 0.7, end: 0 },
+                lifespan: 500, // A slightly longer lifespan for a fuller trail.
+                frequency: 60, // Emits particles more frequently for a denser look.
+                idle: { speed: 40 },
+                // Increased speed for a more powerful "high-thrust" appearance.
+                moving: { speed: { min: 100, max: 150 } },
+                // Spawns the trail slightly behind the ship's model for a more realistic look.
+                spawnOffset: 30,
+                // A moderate rotation speed (360 degrees per second). This gives the trail
+                // a nice "whip" effect without being too jerky.
+                rotationSpeed: Math.PI * 2,
             };
 
             // Create an instance of our new, unified EngineTrail class.
             this.engineTrail = new EngineTrail(this.scene, this, enemyTrailConfig);
         }
+        this.setTint(0xaaaaaa);
     }
 
     /**
@@ -68,14 +77,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
-     * @method update
-     * @description The enemy's update loop, called automatically by the physics group.
+     * @method preUpdate
+     * @description The enemy's update loop. Changed from `update` to `preUpdate` to get access
+     * to the `time` and `delta` parameters, which are now required by the EngineTrail's update method.
+     * @param {number} time - The current game time.
+     * @param {number} delta - The time elapsed since the last frame.
      */
-    // CORRECTED: Prefixed unused parameters with an underscore to resolve the warnings.
-    update(_time: number, _delta: number): void {
-        // We must update the engine trail every frame to make it follow the enemy.
+    preUpdate(time: number, delta: number): void {
+        // It's important to call the parent's preUpdate method.
+        super.preUpdate(time, delta);
+
+        // We must update the engine trail every frame, passing along the time and delta
+        // values to allow for smooth, frame-rate-independent rotation.
         if (this.engineTrail) {
-            this.engineTrail.update();
+            this.engineTrail.update(time, delta);
         }
     }
 

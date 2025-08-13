@@ -7,77 +7,110 @@ import { Scene, GameObjects, Math as pMath } from 'phaser';
 export interface IEngineTrailConfig {
     tint: { start: number; end: number };
     scale: { start: number; end: number };
-    speed: { min: number; max: number };
     lifespan: number;
     frequency: number;
+    idle: { speed: number };
+    moving: { speed: { min: number; max: number } };
+    spawnOffset: number; // How far from the ship's center the trail should spawn.
+    rotationSpeed: number; // How quickly the trail's angle should adapt, in radians per second.
 }
 
 /**
  * @class EngineTrail
  * @description Manages a sophisticated particle emitter for a ship's engine trail.
- * The trail's angle dynamically adjusts based on the target's velocity.
+ * The trail's angle and intensity now dynamically adjust based on the target's velocity.
  */
 export class EngineTrail {
     private scene: Scene;
     private emitter: GameObjects.Particles.ParticleEmitter;
-    private target: GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body }; // Ensure target has a body
-    private lifespan: number; // Store the lifespan locally to avoid type issues.
+    private target: GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body };
+    private config: IEngineTrailConfig;
+    // This now represents the smoothed PHYSICAL angle of the engine's thrust.
+    private currentAngle: number;
 
     constructor(scene: Scene, target: GameObjects.Sprite, config: IEngineTrailConfig) {
         this.scene = scene;
-        this.target = target as any; // Cast to ensure body property is accessible
-        this.lifespan = config.lifespan; // Store the lifespan from the config.
+        this.target = target as any;
+        this.config = config;
+
+        // Initialize the currentAngle to the ship's physical rear.
+        this.currentAngle = this.target.rotation + Math.PI / 2;
 
         this.emitter = this.scene.add.particles(0, 0, 'engine-particle', {
-            speed: config.speed,
-            scale: config.scale,
-            lifespan: this.lifespan, // Use the stored value.
-            tint: config.tint,
-            frequency: config.frequency,
+            scale: this.config.scale,
+            lifespan: this.config.lifespan,
+            tint: this.config.tint,
             quantity: 1,
             blendMode: 'ADD',
-            // The angle is now controlled dynamically in the update method.
+            frequency: this.config.frequency,
+            speed: () => {
+                if (this.target.body && this.target.body.velocity.length() > 10) {
+                    return pMath.Between(
+                        this.config.moving.speed.min,
+                        this.config.moving.speed.max,
+                    );
+                } else {
+                    return this.config.idle.speed;
+                }
+            },
         });
     }
 
     /**
      * @method update
-     * @description Called every frame to update the emitter's position and angle.
+     * @description Called every frame to update the emitter's position and smoothly adjust its angle.
      */
-    public update(): void {
-        if (!this.target.active) {
-            // If the target is no longer active, stop emitting.
+    public update(time: number, delta: number): void {
+        if (!this.target.active || !this.target.body) {
             this.emitter.stop();
             return;
         }
 
-        // Keep the emitter positioned at the back of the target sprite.
-        this.emitter.setPosition(this.target.x, this.target.y + this.target.displayHeight / 2);
-
-        // --- DYNAMIC ANGLE CALCULATION ---
-        // This is the core of the new "banking" effect.
+        // --- STEP 1: DETERMINE THE TARGET PHYSICAL ANGLE ---
+        // This is the direction the engine is ACTUALLY pointing.
         const velocity = this.target.body.velocity;
-        if (velocity.length() > 0) {
-            // We get the angle of the ship's velocity vector.
-            const angle = velocity.angle();
-            // We convert it from radians to degrees and make it point opposite to the velocity.
-            // The +90 degrees corrects for Phaser's coordinate system (0 degrees is to the right).
-            this.emitter.setAngle(pMath.RadToDeg(angle) + 90);
+        const speed = velocity.length();
+        let targetPhysicalAngle: number;
+
+        if (speed > 10) {
+            // Moving state: The physical rear is opposite to the velocity.
+            targetPhysicalAngle = velocity.angle() + Math.PI;
         } else {
-            // If the ship is not moving, the trail points straight down.
-            this.emitter.setAngle(90);
+            // Idle state: The physical rear is at the "bottom" of the sprite.
+            targetPhysicalAngle = this.target.rotation + Math.PI / 2;
         }
+
+        // --- STEP 2: SMOOTH THE PHYSICAL ANGLE ---
+        // We smoothly interpolate our current physical angle towards the target physical angle.
+        const rotationAmount = this.config.rotationSpeed * (delta / 1000);
+        this.currentAngle = pMath.Angle.RotateTo(
+            this.currentAngle,
+            targetPhysicalAngle,
+            rotationAmount,
+        );
+
+        // --- STEP 3: CALCULATE SPAWN POINT FROM THE SMOOTHED PHYSICAL ANGLE ---
+        // PROBLEM FIXED: The spawn point is now derived from the smoothed physical angle.
+        // This ensures the trail's origin moves in sync with its direction, creating a stable pivot point.
+        const spawnPoint = new Phaser.Math.Vector2();
+        spawnPoint.setToPolar(this.currentAngle, this.config.spawnOffset);
+        this.emitter.setPosition(this.target.x + spawnPoint.x, this.target.y + spawnPoint.y);
+
+        // --- STEP 4: CALCULATE THE FINAL VISUAL ANGLE ---
+        // PROBLEM FIXED: The visual direction is the physical direction plus the 90-degree asset correction.
+        // Because the spawn point is now correctly calculated from the physical rear, this will look correct
+        // for all ships, including enemies.
+        const visualAngle = this.currentAngle + Math.PI / 2;
+        this.emitter.setAngle(pMath.RadToDeg(visualAngle));
     }
 
     /**
      * @method destroy
-     * @description Stops and removes the particle emitter, allowing existing particles to fade out.
+     * @description Stops and removes the particle emitter from the scene.
      */
     public destroy(): void {
         this.emitter.stop();
-        // CORRECTED AGAIN: We now use the locally stored 'lifespan' property,
-        // which is guaranteed to be a simple number, resolving the type error.
-        this.scene.time.delayedCall(this.lifespan, () => {
+        this.scene.time.delayedCall(this.config.lifespan, () => {
             this.emitter.destroy();
         });
     }
