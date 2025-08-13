@@ -16,39 +16,40 @@ export class MainMenu extends Scene {
 
     create() {
         // --- Background ---
-        // Instantiate the upgraded ParallaxBackground class.
         this.parallaxBackground = new ParallaxBackground(this);
 
-        // --- FINAL Background Layer Composition using Additive Blending ---
-        // This logic mirrors the Game scene to create a bright, consistent look,
-        // but uses slower speeds for a more cinematic feel on the menu.
+        // --- FINAL Background Layer Composition with Rotation ---
+        // This logic mirrors the Game scene, using rotation to break up repeating patterns,
+        // but with slower speeds for a more tranquil menu screen.
 
-        // Layer 1 (Base Layer): A solid, dark layer of stars. This is our canvas.
+        // Layer 1 (Base Layer):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.05, // Very slow for the menu.
-            tint: 0x444444, // A dark, subtle base.
+            tint: 0x444444,
             blendMode: 'NORMAL',
+            rotation: 0.2, // A slight rotation.
         });
 
-        // Layer 2 (Additive): A brighter layer that ADDS its light to the base.
+        // Layer 2 (Additive):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.2,
-            tint: 0xbbbbbb, // Bright tint.
-            blendMode: 'ADD', // This is the key to making the stars pop.
+            tint: 0xbbbbbb,
+            blendMode: 'ADD',
+            rotation: -0.5, // A different rotation in the opposite direction.
         });
 
-        // Layer 3 (Additive, Foreground): The fastest and brightest layer.
+        // Layer 3 (Additive, Foreground):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.4,
-            tint: 0xffffff, // Full brightness.
+            tint: 0xffffff,
             blendMode: 'ADD',
+            rotation: 1.1, // A more significant rotation.
         });
 
         // --- Post-Processing ---
-        // Apply the bloom effect to the main menu camera for a consistent, polished look.
         (this.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines.addPostPipeline(
             'Bloom',
             BloomPipeline,
@@ -87,8 +88,6 @@ export class MainMenu extends Scene {
      * @description The scene's update loop, called every frame.
      */
     update() {
-        // We must call the update method of our parallax background
-        // instance each frame to make it scroll.
         this.parallaxBackground.update();
     }
 }

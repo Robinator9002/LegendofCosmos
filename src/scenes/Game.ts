@@ -7,7 +7,7 @@ import { ParallaxBackground } from '../effects/ParallaxBackground';
 import { BloomPipeline } from '../effects/BloomPipeline';
 import { EnemyTypes } from '../data/EnemyTypes';
 import { EngineTrail } from '../effects/EngineTrail';
-import { AsteroidPipeline } from '../effects/AsteroidPipeline'; // Import the new pipeline
+import { AsteroidPipeline } from '../effects/AsteroidPipeline';
 
 /**
  * @class Game
@@ -38,39 +38,46 @@ export class Game extends Scene {
     create() {
         // --- Background ---
         this.parallaxBackground = new ParallaxBackground(this);
+
+        // --- FINAL Background Layer Composition with Rotation ---
+        // We now add a unique rotation to each layer to break up the repeating patterns.
+        // This creates a much more natural and less uniform-looking starfield.
+
+        // Layer 1 (Base Layer):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.1,
             tint: 0x444444,
             blendMode: 'NORMAL',
+            rotation: 0.2, // A slight rotation.
         });
+
+        // Layer 2 (Additive):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.4,
             tint: 0xbbbbbb,
             blendMode: 'ADD',
+            rotation: -0.5, // A different rotation in the opposite direction.
         });
+
+        // Layer 3 (Additive, Foreground):
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.7,
             tint: 0xffffff,
             blendMode: 'ADD',
+            rotation: 1.1, // A more significant rotation.
         });
 
         // --- Post-Processing Effects ---
         const renderer = this.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
         if (renderer.pipelines) {
-            // Register the global Bloom pipeline for the whole scene.
             renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
             this.cameras.main.setPostPipeline('Bloom');
             this.bloomPipeline = this.cameras.main.getPostPipeline('Bloom') as BloomPipeline;
 
-            // --- REGISTER THE NEW ASTEROID PIPELINE ---
-            // We register the AsteroidPipeline with a unique key. This makes it available
-            // to be used by any game object in this scene, but it won't be applied
-            // automatically. We will apply it selectively in the Enemy class.
             if (!renderer.pipelines.get('Asteroid')) {
-                // CORRECTED: We must pass an INSTANCE of the pipeline, not the class itself.
                 renderer.pipelines.add('Asteroid', new AsteroidPipeline(this.game));
             }
         }
