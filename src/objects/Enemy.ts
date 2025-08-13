@@ -5,7 +5,7 @@ import { EnemyEngineTrail } from '../effects/EnemyEngineTrail';
 
 /**
  * @class Enemy
- * @description Represents a generic enemy, configured by data. Now with more accurate hitboxes for asteroids.
+ * @description Represents a generic enemy, configured by data. Now with tumbling, rotated asteroids.
  */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
     private health: number;
@@ -16,7 +16,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.health = enemyData.health;
         this.setData('scoreValue', enemyData.scoreValue);
 
-        // Apply effects based on enemy type in a data-driven way.
         if (enemyData.key === 'enemy-big') {
             const pipeline = (
                 this.scene.renderer as Phaser.Renderer.WebGL.WebGLRenderer
@@ -25,7 +24,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
                 this.setPostPipeline(pipeline);
             }
         } else {
-            // Only non-asteroid enemies get an engine trail and a standard tint.
             this.engineTrail = new EnemyEngineTrail(this.scene, this);
         }
         this.setTint(0xaaaaaa);
@@ -45,15 +43,19 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.setScale(enemyData.scale);
         this.setVelocityY(Phaser.Math.Between(enemyData.speed.min, enemyData.speed.max));
 
-        // --- ACCURATE HITBOX CALIBRATION ---
         if (enemyData.key === 'enemy-big') {
-            // We've determined through visual debugging that the actual asteroid
-            // is about 80% of the texture's full width.
+            // --- ASTEROID ROTATION ---
+            // Give the asteroid a random starting angle. This hides the "missing"
+            // quadrant of the sprite, making the circular hitbox feel much more natural.
+            this.setRotation(Phaser.Math.FloatBetween(0, Math.PI * 2));
+
+            // Give the asteroid a slow, random tumble as it moves.
+            // This adds to the dynamic feel and further breaks up any visual repetition.
+            this.setAngularVelocity(Phaser.Math.Between(-50, 50));
+
+            // Set the calibrated circular hitbox.
             const hitboxRadius = (this.width * 0.8) / 2;
             this.body.setCircle(hitboxRadius);
-
-            // To center this smaller circle within the larger texture frame,
-            // we need to offset it from the top-left corner.
             const offset = (this.width - hitboxRadius * 2) / 2;
             this.body.setOffset(offset, offset);
         }
@@ -72,11 +74,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
      * @param {boolean} [fromScene] - Internal Phaser parameter.
      */
     destroy(fromScene?: boolean): void {
-        // If this enemy had an engine trail, we must destroy it as well.
         if (this.engineTrail) {
             this.engineTrail.destroy();
         }
-        // Call the parent's destroy method to finish the job.
         super.destroy(fromScene);
     }
 }
