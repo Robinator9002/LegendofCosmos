@@ -24,13 +24,6 @@ export class Game extends Scene {
     private score: number;
     private scoreText: GameObjects.Text;
 
-    // --- Debug and Tuning Properties ---
-    private bloomPipeline: BloomPipeline;
-    private keyI: Phaser.Input.Keyboard.Key;
-    private keyO: Phaser.Input.Keyboard.Key;
-    private keyK: Phaser.Input.Keyboard.Key;
-    private keyL: Phaser.Input.Keyboard.Key;
-
     constructor() {
         super('Game');
     }
@@ -75,7 +68,6 @@ export class Game extends Scene {
         if (renderer.pipelines) {
             renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
             this.cameras.main.setPostPipeline('Bloom');
-            this.bloomPipeline = this.cameras.main.getPostPipeline('Bloom') as BloomPipeline;
 
             if (!renderer.pipelines.get('Asteroid')) {
                 renderer.pipelines.add('Asteroid', new AsteroidPipeline(this.game));
@@ -123,14 +115,6 @@ export class Game extends Scene {
             stroke: '#000',
             strokeThickness: 4,
         });
-
-        // --- Debug Controls for Bloom ---
-        if (this.input.keyboard) {
-            this.keyI = this.input.keyboard.addKey('I');
-            this.keyO = this.input.keyboard.addKey('O');
-            this.keyK = this.input.keyboard.addKey('K');
-            this.keyL = this.input.keyboard.addKey('L');
-        }
     }
 
     update() {
@@ -140,7 +124,6 @@ export class Game extends Scene {
         this.parallaxBackground.update();
         this.player.update();
         this.handleCleanup();
-        this.handleDebugInput();
     }
 
     private handleCleanup() {
@@ -191,23 +174,6 @@ export class Game extends Scene {
             this.time.delayedCall(50, () => {
                 enemy.setTint(0xaaaaaa);
             });
-        }
-    }
-
-    private handleDebugInput() {
-        if (!this.bloomPipeline || !this.keyI) return;
-
-        if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
-            this.bloomPipeline.intensity += 0.1;
-        }
-        if (Phaser.Input.Keyboard.JustDown(this.keyO)) {
-            this.bloomPipeline.intensity -= 0.1;
-        }
-        if (Phaser.Input.Keyboard.JustDown(this.keyK)) {
-            this.bloomPipeline.strength += 0.1;
-        }
-        if (Phaser.Input.Keyboard.JustDown(this.keyL)) {
-            this.bloomPipeline.strength -= 0.1;
         }
     }
 }
