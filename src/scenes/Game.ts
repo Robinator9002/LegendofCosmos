@@ -6,13 +6,12 @@ import { ExplosionManager } from '../effects/ExplosionManager';
 import { ParallaxBackground } from '../effects/ParallaxBackground';
 import { BloomPipeline } from '../effects/BloomPipeline';
 import { EnemyTypes } from '../data/EnemyTypes';
-import { EngineTrail } from '../effects/EngineTrail';
 import { AsteroidPipeline } from '../effects/AsteroidPipeline';
-import { VignettePipeline } from '../effects/VignettePipeline'; // Import the new Vignette pipeline
+import { VignettePipeline } from '../effects/VignettePipeline';
 
 /**
  * @class Game
- * @description The main game scene, now with more polish.
+ * @description The main game scene, now with all polish effects integrated.
  */
 export class Game extends Scene {
     private parallaxBackground: ParallaxBackground;
@@ -55,7 +54,6 @@ export class Game extends Scene {
         // --- Post-Processing Effects ---
         const renderer = this.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
         if (renderer.pipelines) {
-            // Register all our custom pipelines.
             if (!renderer.pipelines.get('Bloom')) {
                 renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
             }
@@ -65,9 +63,6 @@ export class Game extends Scene {
             if (!renderer.pipelines.get('Vignette')) {
                 renderer.pipelines.addPostPipeline('Vignette', VignettePipeline);
             }
-
-            // Apply the pipelines to the main camera. The order is important.
-            // Bloom runs first, then the Vignette darkens the final bloomed image.
             this.cameras.main.setPostPipeline(['Bloom', 'Vignette']);
         }
 
@@ -77,13 +72,15 @@ export class Game extends Scene {
         this.enemies = this.physics.add.group({ classType: Enemy, runChildUpdate: true });
 
         // --- Player ---
+        // The Player's constructor now handles the creation of its own engine trail.
         this.player = new Player(
             this,
             this.scale.width / 2,
             this.scale.height - 100,
             this.playerLasers,
         );
-        new EngineTrail(this, this.player);
+        // CORRECTED: The following line was redundant and has been removed.
+        // new EngineTrail(this, this.player);
 
         // --- Enemy Spawning ---
         this.time.addEvent({
@@ -158,10 +155,7 @@ export class Game extends Scene {
         const laser = laserObject as Laser;
         const enemy = enemyObject as Enemy;
 
-        // --- ADDED IMPACT EFFECT ---
-        // When a laser hits an enemy, we now create a satisfying spark effect.
         this.explosionManager.createImpactEffect(laser.x, laser.y);
-
         laser.destroy();
         enemy.takeDamage(1);
 
