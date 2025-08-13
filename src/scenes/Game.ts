@@ -36,39 +36,40 @@ export class Game extends Scene {
 
     create() {
         // --- Background ---
-        // Instantiate the ParallaxBackground class to build our dynamic background.
+        // Instantiate the upgraded ParallaxBackground class.
         this.parallaxBackground = new ParallaxBackground(this);
 
-        // --- REVISED Background Layer Composition for Optical Illusion ---
-        // To achieve the desired effect, we invert the common logic.
-        // The layer drawn first (at the back) will be fast and opaque, perceived as the foreground.
-        // The layer drawn last (on top) will be slow and transparent, perceived as the distant background.
+        // --- FINAL Background Layer Composition ---
+        // We now use both tint and alpha to create the correct optical illusion.
+        // The random offsets are now handled automatically by the ParallaxBackground class.
 
-        // Layer 1 (Drawn First -> Perceived as FOREGROUND): Fast, Opaque.
+        // Layer 1 (Drawn First -> Perceived as FOREGROUND): Fast, Bright, Opaque.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
             scrollSpeed: -0.7, // Negative value to scroll DOWN, fast speed.
-            alpha: 1.0, // Fully opaque.
+            tint: 0xffffff, // Full brightness (white).
+            alpha: 1.0,
         });
 
-        // Layer 2 (Middle Layer): Medium speed and opacity.
+        // Layer 2 (Middle Layer): Medium speed, medium brightness.
         this.parallaxBackground.addTileSpriteLayer({
             textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.4, // Negative value, medium speed.
+            scrollSpeed: -0.4, // Slower speed.
+            tint: 0xaaaaaa, // Medium gray tint for reduced brightness.
+            alpha: 0.8,
+        });
+
+        // Layer 3 (Drawn Last -> Perceived as BACKGROUND): Slow, Dark, Transparent.
+        this.parallaxBackground.addTileSpriteLayer({
+            textureKey: 'stars-background-contrast',
+            scrollSpeed: -0.2, // Very slow speed.
+            tint: 0x555555, // Dark gray tint for a deep space feel.
             alpha: 0.6,
-        });
-
-        // Layer 3 (Drawn Last -> Perceived as BACKGROUND): Slow, Transparent.
-        this.parallaxBackground.addTileSpriteLayer({
-            textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.2, // Negative value, slow speed.
-            alpha: 0.3, // Very transparent.
         });
 
         // --- Post-Processing Effects ---
         const renderer = this.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
         if (renderer.pipelines) {
-            // This check ensures we only try to add pipelines in WebGL mode.
             renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
             this.cameras.main.setPostPipeline('Bloom');
             this.bloomPipeline = this.cameras.main.getPostPipeline('Bloom') as BloomPipeline;
@@ -86,11 +87,9 @@ export class Game extends Scene {
             this.scale.height - 100,
             this.playerLasers,
         );
-        // The EngineTrail is self-managing; it just needs to be created.
         new EngineTrail(this, this.player);
 
         // --- Enemy Spawning ---
-        // A recurring timer event to spawn enemies at regular intervals.
         this.time.addEvent({
             delay: 1000,
             callback: this.spawnEnemy,
@@ -129,35 +128,23 @@ export class Game extends Scene {
 
     update() {
         if (!this.player || !this.player.active) {
-            // If the player is destroyed, we stop the update loop for gameplay objects.
             return;
         }
-        // The background must be updated every frame to scroll.
         this.parallaxBackground.update();
         this.player.update();
         this.handleCleanup();
         this.handleDebugInput();
     }
 
-    /**
-     * @method handleCleanup
-     * @description Periodically removes off-screen game objects to prevent memory leaks.
-     */
     private handleCleanup() {
-        // Clean up lasers that have flown off the top of the screen.
         this.playerLasers.getChildren().forEach((laser) => {
             if ((laser as Laser).y < -50) laser.destroy();
         });
-        // Clean up enemies that have flown off the bottom of the screen.
         this.enemies.getChildren().forEach((enemy) => {
             if ((enemy as Enemy).y > this.scale.height + 50) enemy.destroy();
         });
     }
 
-    /**
-     * @method spawnEnemy
-     * @description Spawns a new enemy at a random location based on the data in EnemyTypes.
-     */
     private spawnEnemy() {
         const enemyData = Phaser.Math.RND.pick(EnemyTypes);
         const x = Phaser.Math.Between(50, this.scale.width - 50);
@@ -166,33 +153,20 @@ export class Game extends Scene {
         enemy.initialize(enemyData);
     }
 
-    /**
-     * @method playerHitEnemy
-     * @description Callback for when the player collides with an enemy.
-     */
     private playerHitEnemy(playerObject: any, enemyObject: any) {
         const player = playerObject as Player;
         const enemy = enemyObject as Enemy;
 
-        // Create explosions for both the player and the enemy.
         this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.texture.key);
         this.explosionManager.createExplosion(player.x, player.y, 'player');
-
         this.cameras.main.shake(500, 0.01);
         this.sound.play('gameover-sound');
-
         player.destroy();
-
-        // Transition to the GameOver scene after a short delay.
         this.time.delayedCall(1000, () => {
             this.scene.start('GameOver', { score: this.score });
         });
     }
 
-    /**
-     * @method laserHitEnemy
-     * @description Callback for when a player's laser hits an enemy.
-     */
     private laserHitEnemy(laserObject: any, enemyObject: any) {
         const laser = laserObject as Laser;
         const enemy = enemyObject as Enemy;
@@ -201,25 +175,18 @@ export class Game extends Scene {
         enemy.takeDamage(1);
 
         if (!enemy.active) {
-            // If the enemy is destroyed...
             this.score += enemy.getData('scoreValue') as number;
             this.scoreText.setText('Score: ' + this.score);
             this.cameras.main.shake(100, 0.005);
             this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.texture.key);
         } else {
-            // If the enemy is damaged but survives, make it flash red.
             enemy.setTint(0xff0000);
             this.time.delayedCall(50, () => {
-                // IMPORTANT: We set the tint back to our dimmed color, not clear it.
                 enemy.setTint(0xcccccc);
             });
         }
     }
 
-    /**
-     * @method handleDebugInput
-     * @description Handles keyboard input for real-time tuning of debug variables (like bloom).
-     */
     private handleDebugInput() {
         if (!this.bloomPipeline || !this.keyI) return;
 
