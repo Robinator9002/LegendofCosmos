@@ -24,27 +24,28 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
                 this.setPostPipeline(pipeline);
             }
         } else {
-            this.setTint(0xaaaaaa);
-
             // --- FINAL ENEMY TRAIL CONFIG ---
             // This configuration is now complete and tuned for the enemy's behavior.
             const enemyTrailConfig: IEngineTrailConfig = {
                 tint: { start: 0xff8800, end: 0xff0000 },
                 scale: { start: 0.7, end: 0 },
                 lifespan: 500,
-                frequency: 60,
+                frequency: 60, // High frequency (low delay) when moving.
+                // --- FIX ---
+                // Added the missing property to satisfy the interface.
+                idleFrequency: 150, // A moderately high delay for a less intense idle effect than the player.
                 idle: { speed: 40 },
                 moving: { speed: { min: 100, max: 150 } },
                 spawnOffset: 30,
-                rotationSpeed: Math.PI * 2, // 360 degrees per second.
-                // --- FIXES ---
-                // Added the two missing properties to satisfy the interface and finalize the effect.
-                spread: 20, // A 20-degree cone for a slightly less focused, more "raw" look.
-                pivot: 'dynamic', // The trail's origin moves with the thrust angle, which is correct for enemies.
+                rotationSpeed: Math.PI * 2,
+                spread: 20,
+                pivot: 'dynamic',
             };
 
             this.engineTrail = new EngineTrail(this.scene, this, enemyTrailConfig);
         }
+        // Set the tint for all Enemies
+        this.setTint(0xaaaaaa);
     }
 
     /**
@@ -80,9 +81,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     preUpdate(time: number, delta: number): void {
         super.preUpdate(time, delta);
 
-        // --- FIX ---
-        // We now pass only the `delta` argument to the trail's update method,
-        // which resolves the "Expected 1 arguments, but got 2" error.
         if (this.engineTrail) {
             this.engineTrail.update(delta);
         }

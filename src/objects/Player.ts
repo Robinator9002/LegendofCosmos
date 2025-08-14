@@ -36,15 +36,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             tint: { start: 0xaaaaff, end: 0x00aaff },
             scale: { start: 0.8, end: 0 },
             lifespan: 500,
-            frequency: 40,
+            frequency: 40, // High frequency (low delay) when moving.
+            // --- FIX ---
+            // Added the missing property to satisfy the interface and fix the "solid line" issue.
+            idleFrequency: 200, // Low frequency (high delay) when idle for a "pulsing" effect.
             idle: { speed: 50 },
             moving: { speed: { min: 100, max: 150 } },
             spawnOffset: 40,
-            rotationSpeed: Math.PI * 4, // 720 degrees per second for a snappy feel.
-            // --- FIXES ---
-            // Added the two missing properties to satisfy the interface and finalize the effect.
-            spread: 10, // A very narrow 10-degree cone for a focused beam.
-            pivot: 'static', // Locks the trail's origin to the ship's model, preventing wobble.
+            rotationSpeed: Math.PI * 4,
+            spread: 10,
+            pivot: 'static',
         };
 
         this.engineTrail = new EngineTrail(this.scene, this, playerTrailConfig);
@@ -62,9 +63,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.handleMovement();
         this.handleShooting();
 
-        // --- FIX ---
-        // We now pass only the `delta` argument to the trail's update method,
-        // which resolves the "Expected 1 arguments, but got 2" error.
         if (this.engineTrail) {
             this.engineTrail.update(delta);
         }
