@@ -16,9 +16,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.health = enemyData.health;
         this.setData('scoreValue', enemyData.scoreValue);
 
-        // Apply effects based on enemy type in a data-driven way.
         if (enemyData.key === 'enemy-big') {
-            // Asteroids get the custom shader.
             const pipeline = (
                 this.scene.renderer as Phaser.Renderer.WebGL.WebGLRenderer
             ).pipelines.get('Asteroid') as AsteroidPipeline;
@@ -26,30 +24,27 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
                 this.setPostPipeline(pipeline);
             }
         } else {
-            // --- REVISED ENEMY TRAIL CONFIG ---
-            // This configuration has been completely overhauled for a more powerful and menacing look.
+            this.setTint(0xaaaaaa);
+
+            // --- FINAL ENEMY TRAIL CONFIG ---
+            // This configuration is now complete and tuned for the enemy's behavior.
             const enemyTrailConfig: IEngineTrailConfig = {
-                // A fiery orange-to-red gradient. This will look much more "hot" and
-                // distinctly red against the dark background.
                 tint: { start: 0xff8800, end: 0xff0000 },
-                // A larger, more substantial trail.
                 scale: { start: 0.7, end: 0 },
-                lifespan: 500, // A slightly longer lifespan for a fuller trail.
-                frequency: 60, // Emits particles more frequently for a denser look.
+                lifespan: 500,
+                frequency: 60,
                 idle: { speed: 40 },
-                // Increased speed for a more powerful "high-thrust" appearance.
                 moving: { speed: { min: 100, max: 150 } },
-                // Spawns the trail slightly behind the ship's model for a more realistic look.
                 spawnOffset: 30,
-                // A moderate rotation speed (360 degrees per second). This gives the trail
-                // a nice "whip" effect without being too jerky.
-                rotationSpeed: Math.PI * 2,
+                rotationSpeed: Math.PI * 2, // 360 degrees per second.
+                // --- FIXES ---
+                // Added the two missing properties to satisfy the interface and finalize the effect.
+                spread: 20, // A 20-degree cone for a slightly less focused, more "raw" look.
+                pivot: 'dynamic', // The trail's origin moves with the thrust angle, which is correct for enemies.
             };
 
-            // Create an instance of our new, unified EngineTrail class.
             this.engineTrail = new EngineTrail(this.scene, this, enemyTrailConfig);
         }
-        this.setTint(0xaaaaaa);
     }
 
     /**
@@ -78,19 +73,18 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     /**
      * @method preUpdate
-     * @description The enemy's update loop. Changed from `update` to `preUpdate` to get access
-     * to the `time` and `delta` parameters, which are now required by the EngineTrail's update method.
-     * @param {number} time - The current game time.
+     * @description The enemy's update loop.
+     * @param {number} time - The current game time (unused, but required by method signature).
      * @param {number} delta - The time elapsed since the last frame.
      */
     preUpdate(time: number, delta: number): void {
-        // It's important to call the parent's preUpdate method.
         super.preUpdate(time, delta);
 
-        // We must update the engine trail every frame, passing along the time and delta
-        // values to allow for smooth, frame-rate-independent rotation.
+        // --- FIX ---
+        // We now pass only the `delta` argument to the trail's update method,
+        // which resolves the "Expected 1 arguments, but got 2" error.
         if (this.engineTrail) {
-            this.engineTrail.update(time, delta);
+            this.engineTrail.update(delta);
         }
     }
 
@@ -107,7 +101,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
      * @param {boolean} [fromScene] - Internal Phaser parameter.
      */
     destroy(fromScene?: boolean): void {
-        // This is the crucial fix for the "ghost trail" problem.
         if (this.engineTrail) {
             this.engineTrail.destroy();
         }

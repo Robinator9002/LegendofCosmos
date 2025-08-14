@@ -30,8 +30,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.cursors = this.scene.input.keyboard!.createCursorKeys();
         this.fireKey = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-        // --- UPDATED PLAYER TRAIL CONFIG ---
-        // This configuration is now fully compliant with the new IEngineTrailConfig interface.
+        // --- FINAL PLAYER TRAIL CONFIG ---
+        // This configuration is now complete and tuned for the player's specific needs.
         const playerTrailConfig: IEngineTrailConfig = {
             tint: { start: 0xaaaaff, end: 0x00aaff },
             scale: { start: 0.8, end: 0 },
@@ -39,38 +39,34 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             frequency: 40,
             idle: { speed: 50 },
             moving: { speed: { min: 100, max: 150 } },
-            // --- FIX ---
-            // Added the two missing properties required by the interface.
-            // A larger offset to ensure the trail spawns clearly behind the player model.
             spawnOffset: 40,
-            // A very high rotation speed. This makes the player's trail feel extremely
-            // responsive and snappy, immediately reacting to changes in direction.
-            rotationSpeed: Math.PI * 4, // 720 degrees per second
+            rotationSpeed: Math.PI * 4, // 720 degrees per second for a snappy feel.
+            // --- FIXES ---
+            // Added the two missing properties to satisfy the interface and finalize the effect.
+            spread: 10, // A very narrow 10-degree cone for a focused beam.
+            pivot: 'static', // Locks the trail's origin to the ship's model, preventing wobble.
         };
 
-        // Create an instance of our new, unified EngineTrail class.
         this.engineTrail = new EngineTrail(this.scene, this, playerTrailConfig);
     }
 
     /**
      * @method preUpdate
-     * @description The main update loop for the player. Changed from `update` to `preUpdate`
-     * to get access to the `time` and `delta` parameters required by the trail.
-     * @param {number} time - The current game time.
+     * @description The main update loop for the player.
+     * @param {number} time - The current game time (unused, but required by method signature).
      * @param {number} delta - The time elapsed since the last frame.
      */
     preUpdate(time: number, delta: number) {
-        // It's important to call the parent's preUpdate method.
         super.preUpdate(time, delta);
 
         this.handleMovement();
         this.handleShooting();
 
         // --- FIX ---
-        // We now pass the `time` and `delta` arguments to the trail's update method,
-        // which resolves the "Expected 2 arguments, but got 0" error.
+        // We now pass only the `delta` argument to the trail's update method,
+        // which resolves the "Expected 1 arguments, but got 2" error.
         if (this.engineTrail) {
-            this.engineTrail.update(time, delta);
+            this.engineTrail.update(delta);
         }
     }
 
@@ -109,11 +105,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
      * @param {boolean} [fromScene] - Internal Phaser parameter.
      */
     destroy(fromScene?: boolean): void {
-        // When the player is destroyed, we now also explicitly destroy its trail.
         if (this.engineTrail) {
             this.engineTrail.destroy();
         }
-        // Call the parent's destroy method to finish the job.
         super.destroy(fromScene);
     }
 }
