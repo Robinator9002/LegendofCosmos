@@ -72,15 +72,12 @@ export class Game extends Scene {
         this.enemies = this.physics.add.group({ classType: Enemy, runChildUpdate: true });
 
         // --- Player ---
-        // The Player's constructor now handles the creation of its own engine trail.
         this.player = new Player(
             this,
             this.scale.width / 2,
             this.scale.height - 100,
             this.playerLasers,
         );
-        // CORRECTED: The following line was redundant and has been removed.
-        // new EngineTrail(this, this.player);
 
         // --- Enemy Spawning ---
         this.time.addEvent({
@@ -116,7 +113,8 @@ export class Game extends Scene {
             return;
         }
         this.parallaxBackground.update();
-        this.player.update();
+        // The player's preUpdate is now called automatically by the scene,
+        // so we don't need to call player.update() here anymore.
         this.handleCleanup();
     }
 
@@ -160,15 +158,24 @@ export class Game extends Scene {
         enemy.takeDamage(1);
 
         if (!enemy.active) {
+            // --- DEATH LOGIC ---
             this.score += enemy.getData('scoreValue') as number;
             this.scoreText.setText('Score: ' + this.score);
             this.cameras.main.shake(100, 0.005);
             this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.texture.key);
         } else {
+            // --- HIT LOGIC ---
+            // Flash the enemy red to show damage.
             enemy.setTint(0xff0000);
             this.time.delayedCall(50, () => {
                 enemy.setTint(0xaaaaaa);
             });
+
+            // --- FINAL FIX ---
+            // This is the crucial connection. We call the enemy's new handleHit method,
+            // passing it a reference to the explosion manager. This triggers the shake
+            // and the small explosion, making the hit feel mighty.
+            enemy.handleHit(this.explosionManager);
         }
     }
 }

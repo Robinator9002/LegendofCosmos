@@ -1,15 +1,16 @@
 import Phaser from 'phaser';
 import { IEnemyType } from '../data/EnemyTypes';
 import { AsteroidPipeline } from '../effects/AsteroidPipeline';
-import { EngineTrail, IEngineTrailConfig } from '../effects/EngineTrail'; // Import the unified trail class
+import { EngineTrail, IEngineTrailConfig } from '../effects/EngineTrail';
+import { ExplosionManager } from '../effects/ExplosionManager'; // Import the ExplosionManager
 
 /**
  * @class Enemy
- * @description Represents a generic enemy, now with its own dynamic engine trail.
+ * @description Represents a generic enemy, now with enhanced hit-feedback mechanics.
  */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
     private health: number;
-    private engineTrail?: EngineTrail; // The trail is optional and uses the new class.
+    private engineTrail?: EngineTrail;
 
     constructor(scene: Phaser.Scene, x: number, y: number, enemyData: IEnemyType) {
         super(scene, x, y, enemyData.texture);
@@ -24,16 +25,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
                 this.setPostPipeline(pipeline);
             }
         } else {
-            this.setTint(0xaaaaaa);
-
-            // --- FINAL ENEMY TRAIL CONFIG ---
             const enemyTrailConfig: IEngineTrailConfig = {
                 tint: { start: 0xff8800, end: 0xff0000 },
-                // --- FIX: Restructured the 'scale' property to match the new interface.
-                // This gives the enemy trail a slightly thicker, more powerful streak effect.
                 scale: {
-                    x: { start: 1.0, end: 0 }, // Starts slightly less wide than the player's
-                    y: { start: 0.5, end: 0 }, // but a bit thicker
+                    x: { start: 1.0, end: 0 },
+                    y: { start: 0.5, end: 0 },
                 },
                 lifespan: 500,
                 frequency: 60,
@@ -48,13 +44,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
             this.engineTrail = new EngineTrail(this.scene, this, enemyTrailConfig);
         }
+        
+        // Should be applied to every Enemy
+        this.setTint(0xaaaaaa);
     }
 
-    /**
-     * @method initialize
-     * @description Applies final properties after the enemy has been added to a physics group.
-     * @param {IEnemyType} enemyData - The data object defining this enemy's properties.
-     */
     public initialize(enemyData: IEnemyType): void {
         if (!this.body) {
             console.error('Enemy body not found during initialization.');
@@ -74,12 +68,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    /**
-     * @method preUpdate
-     * @description The enemy's update loop.
-     * @param {number} time - The current game time (unused, but required by method signature).
-     * @param {number} delta - The time elapsed since the last frame.
-     */
     preUpdate(time: number, delta: number): void {
         super.preUpdate(time, delta);
 
@@ -96,10 +84,28 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
-     * @method destroy
-     * @description Overrides the default destroy method to also clean up the engine trail.
-     * @param {boolean} [fromScene] - Internal Phaser parameter.
+     * @method handleHit
+     * @description --- NEW --- Triggers all visual feedback for when the enemy is hit.
+     * @param {ExplosionManager} explosionManager - A reference to the scene's explosion manager.
      */
+    public handleHit(explosionManager: ExplosionManager): void {
+        // 1. Create the small hit explosion.
+        explosionManager.createHitExplosion(this.x, this.y);
+
+        // 2. Trigger a short, intense shake tween on the enemy sprite.
+        // This makes the hit feel physically impactful.
+        this.scene.tweens.add({
+            targets: this,
+            props: {
+                x: { value: `+=${Phaser.Math.Between(-5, 5)}`, duration: 40 },
+                y: { value: `+=${Phaser.Math.Between(-5, 5)}`, duration: 40 },
+            },
+            ease: 'Power1',
+            yoyo: true, // The shake will automatically return to the original position.
+            repeat: 1,
+        });
+    }
+
     destroy(fromScene?: boolean): void {
         if (this.engineTrail) {
             this.engineTrail.destroy();

@@ -17,7 +17,7 @@ export const EnemyTypes: IEnemyType[] = [
     {
         key: 'enemy-medium',
         texture: 'enemy-medium',
-        health: 1,
+        health: 10,
         scoreValue: 20,
         scale: 0.6,
         speed: { min: 100, max: 200 },
