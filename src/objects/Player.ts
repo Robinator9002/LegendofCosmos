@@ -31,15 +31,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.fireKey = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // --- FINAL PLAYER TRAIL CONFIG ---
-        // This configuration is now complete and tuned for the player's specific needs.
         const playerTrailConfig: IEngineTrailConfig = {
             tint: { start: 0xaaaaff, end: 0x00aaff },
-            scale: { start: 0.8, end: 0 },
+            // --- FIX: Restructured the 'scale' property to match the new interface.
+            // This creates a "streak" effect by scaling the X and Y axes independently.
+            scale: {
+                x: { start: 1.2, end: 0 }, // Starts wide
+                y: { start: 0.4, end: 0 }, // and short
+            },
             lifespan: 500,
-            frequency: 40, // High frequency (low delay) when moving.
-            // --- FIX ---
-            // Added the missing property to satisfy the interface and fix the "solid line" issue.
-            idleFrequency: 200, // Low frequency (high delay) when idle for a "pulsing" effect.
+            frequency: 40,
+            idleFrequency: 200,
             idle: { speed: 50 },
             moving: { speed: { min: 100, max: 150 } },
             spawnOffset: 40,

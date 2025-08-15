@@ -24,16 +24,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
                 this.setPostPipeline(pipeline);
             }
         } else {
+            this.setTint(0xaaaaaa);
+
             // --- FINAL ENEMY TRAIL CONFIG ---
-            // This configuration is now complete and tuned for the enemy's behavior.
             const enemyTrailConfig: IEngineTrailConfig = {
                 tint: { start: 0xff8800, end: 0xff0000 },
-                scale: { start: 0.7, end: 0 },
+                // --- FIX: Restructured the 'scale' property to match the new interface.
+                // This gives the enemy trail a slightly thicker, more powerful streak effect.
+                scale: {
+                    x: { start: 1.0, end: 0 }, // Starts slightly less wide than the player's
+                    y: { start: 0.5, end: 0 }, // but a bit thicker
+                },
                 lifespan: 500,
-                frequency: 60, // High frequency (low delay) when moving.
-                // --- FIX ---
-                // Added the missing property to satisfy the interface.
-                idleFrequency: 150, // A moderately high delay for a less intense idle effect than the player.
+                frequency: 60,
+                idleFrequency: 150,
                 idle: { speed: 40 },
                 moving: { speed: { min: 100, max: 150 } },
                 spawnOffset: 30,
@@ -44,8 +48,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
             this.engineTrail = new EngineTrail(this.scene, this, enemyTrailConfig);
         }
-        // Set the tint for all Enemies
-        this.setTint(0xaaaaaa);
     }
 
     /**

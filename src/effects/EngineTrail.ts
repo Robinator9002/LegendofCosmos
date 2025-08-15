@@ -1,4 +1,4 @@
-import { Scene, GameObjects, Math as pMath, GameObjects as GO } from 'phaser';
+import { Scene, GameObjects, Math as pMath } from 'phaser';
 
 /**
  * @interface IEngineTrailConfig
@@ -6,10 +6,13 @@ import { Scene, GameObjects, Math as pMath, GameObjects as GO } from 'phaser';
  */
 export interface IEngineTrailConfig {
     tint: { start: number; end: number };
-    scale: { start: number; end: number };
+    scale: {
+        x: { start: number; end: number };
+        y: { start: number; end: number };
+    };
     lifespan: number;
     frequency: number;
-    idleFrequency: number; // The time between particles when idle. Higher is less frequent.
+    idleFrequency: number;
     idle: { speed: number };
     moving: { speed: { min: number; max: number } };
     spawnOffset: number;
@@ -28,22 +31,23 @@ export class EngineTrail {
     private target: GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body };
     private config: IEngineTrailConfig;
     private currentAngle: number;
-    private isMoving: boolean; // State variable to track movement status.
+    private isMoving: boolean;
 
     constructor(scene: Scene, target: GameObjects.Sprite, config: IEngineTrailConfig) {
         this.scene = scene;
         this.target = target as any;
         this.config = config;
         this.currentAngle = this.target.rotation + Math.PI / 2;
-        this.isMoving = false; // Assume the ship starts in an idle state.
+        this.isMoving = false;
 
         this.emitter = this.scene.add.particles(0, 0, 'engine-particle', {
-            scale: this.config.scale,
+            scaleX: this.config.scale.x,
+            scaleY: this.config.scale.y,
             lifespan: this.config.lifespan,
             tint: this.config.tint,
             quantity: 1,
             blendMode: 'ADD',
-            frequency: this.config.idleFrequency, // Start with the idle frequency.
+            frequency: this.config.idleFrequency,
             speed: () => {
                 if (this.target.body && this.target.body.velocity.length() > 10) {
                     return pMath.Between(
@@ -59,10 +63,14 @@ export class EngineTrail {
                 const spread = this.config.spread / 2;
                 return pMath.FloatBetween(angleInDegrees - spread, angleInDegrees + spread);
             },
-        });
-
-        this.emitter.on('emit', (particle: GO.Particles.Particle) => {
-            particle.rotation = this.currentAngle;
+            // --- FINAL ROTATION FIX ---
+            // PROBLEM: The particle streaks were rotated 90 degrees off from the trail's direction.
+            // SOLUTION: We take the physically correct `currentAngle` and add a 90-degree offset (PI / 2).
+            // This aligns the particle's "up" with the direction of thrust, fixing the visual bug.
+            rotate: () => {
+                const visualRotation = this.currentAngle + Math.PI / 2;
+                return pMath.RadToDeg(visualRotation);
+            },
         });
     }
 
@@ -80,9 +88,6 @@ export class EngineTrail {
         const speed = velocity.length();
         let targetPhysicalAngle: number;
 
-        // --- STATE-BASED FREQUENCY FIX ---
-        // PROBLEM: Calling setFrequency every frame reset the emitter's timer, preventing emission.
-        // SOLUTION: We now track the movement state and only call setFrequency when the state changes.
         const currentlyMoving = speed > 10;
         if (currentlyMoving !== this.isMoving) {
             this.isMoving = currentlyMoving;
