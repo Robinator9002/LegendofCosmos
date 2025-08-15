@@ -24,4 +24,10 @@ export const playerData: IPlayerData = {
         spread: 10,
         pivot: 'static',
     },
+    // --- NEW: Added the player's specific death debris configuration ---
+    deathDebris: {
+        parts: ['part-generic-1', 'part-generic-2', 'part-generic-3'],
+        quantity: { min: 5, max: 8 },
+        scale: { min: 0.4, max: 0.7 },
+    },
 };

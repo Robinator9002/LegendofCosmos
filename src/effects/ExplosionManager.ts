@@ -1,9 +1,9 @@
 import Phaser, { Scene } from 'phaser';
+import { IDebrisConfig } from '../data/types'; // Import the new data interface
 
 /**
  * @class ExplosionManager
- * @description Centralizes all visual effects for explosions, debris, and now, impacts.
- * This keeps the Game scene cleaner and makes it easy to create consistent, high-quality effects.
+ * @description Centralizes all visual effects for explosions, now fully data-driven.
  */
 export class ExplosionManager {
     private scene: Scene;
@@ -14,12 +14,6 @@ export class ExplosionManager {
         this.debrisGroup = this.scene.physics.add.group();
     }
 
-    /**
-     * @method createImpactEffect
-     * @description Creates a much larger, more impactful, and correctly colored spark effect.
-     * @param {number} x - The x-coordinate of the impact.
-     * @param {number} y - The y-coordinate of the impact.
-     */
     public createImpactEffect(x: number, y: number): void {
         const particles = this.scene.add.particles(x, y, 'engine-particle', {
             angle: { min: 60, max: 120 },
@@ -36,38 +30,27 @@ export class ExplosionManager {
 
     /**
      * @method createExplosion
-     * @description Creates a full explosion effect with a core flash and flying debris.
+     * @description Creates a full explosion effect based on a configuration object.
      * @param {number} x - The x-coordinate of the explosion.
      * @param {number} y - The y-coordinate of the explosion.
-     * @param {string} textureKey - The texture key of the object that exploded, used to determine debris type.
+     * @param {IDebrisConfig} debrisConfig - The data object defining the debris to spawn.
      */
-    public createExplosion(x: number, y: number, textureKey: string): void {
-        this.createCoreFlash(x, y, 60, 150); // Full-size flash
-        this.createDebris(x, y, textureKey);
+    public createExplosion(x: number, y: number, debrisConfig: IDebrisConfig): void {
+        this.createCoreFlash(x, y, 60, 150);
+        this.createDebris(x, y, debrisConfig);
         this.scene.sound.play('explosion-sound', { volume: 0.4 });
     }
 
     /**
      * @method createHitExplosion
-     * @description --- NEW --- Creates a smaller, less intense explosion for hit feedback.
+     * @description Creates a smaller, less intense explosion for hit feedback.
      * @param {number} x - The x-coordinate of the hit.
      * @param {number} y - The y-coordinate of the hit.
+     * @param {IDebrisConfig} debrisConfig - The data object defining the debris to spawn.
      */
-    public createHitExplosion(x: number, y: number): void {
-        // Create a much smaller core flash that lasts for a shorter duration.
+    public createHitExplosion(x: number, y: number, debrisConfig: IDebrisConfig): void {
         this.createCoreFlash(x, y, 20, 80);
-
-        // Spawn a significantly reduced number of debris particles.
-        const debrisCount = Phaser.Math.Between(1, 3);
-        for (let i = 0; i < debrisCount; i++) {
-            const partKey = Phaser.Math.RND.pick([
-                'part-generic-1',
-                'part-generic-2',
-                'part-generic-3',
-            ]);
-            // Use the existing spawn logic, but with a smaller scale range.
-            this.spawnDebrisParticle(x, y, partKey, { min: 0.2, max: 0.4 });
-        }
+        this.createDebris(x, y, debrisConfig);
     }
 
     private createCoreFlash(x: number, y: number, radius: number, duration: number): void {
@@ -85,42 +68,35 @@ export class ExplosionManager {
         });
     }
 
-    private createDebris(x: number, y: number, textureKey: string): void {
-        if (textureKey === 'enemy-medium') {
-            this.spawnDebrisParticle(x, y, 'part-cockpit-red', { min: 0.3, max: 0.5 });
-            const wingCount = Phaser.Math.Between(2, 4);
-            for (let i = 0; i < wingCount; i++) {
-                this.spawnDebrisParticle(x, y, 'part-wing-red', { min: 0.3, max: 0.6 });
-            }
-        } else if (textureKey === 'enemy-big') {
-            const debrisCount = Phaser.Math.Between(6, 10);
-            for (let i = 0; i < debrisCount; i++) {
-                const partKey = Phaser.Math.RND.pick(['meteor-tiny-1', 'meteor-tiny-2']);
-                this.spawnDebrisParticle(x, y, partKey, { min: 0.8, max: 1.2 });
-            }
-        } else {
-            const debrisCount = Phaser.Math.Between(4, 8);
-            for (let i = 0; i < debrisCount; i++) {
-                const partKey = Phaser.Math.RND.pick([
-                    'part-generic-1',
-                    'part-generic-2',
-                    'part-generic-3',
-                ]);
-                this.spawnDebrisParticle(x, y, partKey, { min: 0.3, max: 0.6 });
-            }
+    /**
+     * @method createDebris
+     * @description Spawns debris particles based on a configuration object. This is now a generic, reusable method.
+     * @param {number} x - The x-coordinate of the spawn point.
+     * @param {number} y - The y-coordinate of the spawn point.
+     * @param {IDebrisConfig} config - The data object defining the debris.
+     */
+    private createDebris(x: number, y: number, config: IDebrisConfig): void {
+        const quantity =
+            typeof config.quantity === 'number'
+                ? config.quantity
+                : Phaser.Math.Between(config.quantity.min, config.quantity.max);
+
+        for (let i = 0; i < quantity; i++) {
+            const partKey = Phaser.Math.RND.pick(config.parts);
+            const scale =
+                typeof config.scale === 'number'
+                    ? config.scale
+                    : Phaser.Math.FloatBetween(config.scale.min, config.scale.max);
+
+            this.spawnDebrisParticle(x, y, partKey, scale);
         }
     }
 
-    private spawnDebrisParticle(
-        x: number,
-        y: number,
-        texture: string,
-        scaleRange: { min: number; max: number },
-    ): void {
+    private spawnDebrisParticle(x: number, y: number, texture: string, scale: number): void {
         const debris = this.debrisGroup.create(x, y, texture) as Phaser.Physics.Arcade.Sprite;
         if (!debris.body) return;
 
-        debris.setScale(Phaser.Math.FloatBetween(scaleRange.min, scaleRange.max));
+        debris.setScale(scale);
         debris.setTint(0xaaaaaa);
 
         const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);

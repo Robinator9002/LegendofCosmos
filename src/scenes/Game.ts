@@ -5,13 +5,13 @@ import { Laser } from '../objects/Laser';
 import { ExplosionManager } from '../effects/ExplosionManager';
 import { ParallaxBackground } from '../effects/ParallaxBackground';
 import { BloomPipeline } from '../effects/BloomPipeline';
-import { EnemyTypes } from '../data/EnemyTypes';
 import { AsteroidPipeline } from '../effects/AsteroidPipeline';
 import { VignettePipeline } from '../effects/VignettePipeline';
+import { gameData } from '../data'; // Import the new master game data object
 
 /**
  * @class Game
- * @description The main game scene, now with all polish effects integrated.
+ * @description The main game scene, now fully configured from a central data file.
  */
 export class Game extends Scene {
     private parallaxBackground: ParallaxBackground;
@@ -27,43 +27,36 @@ export class Game extends Scene {
     }
 
     create() {
-        // --- Background ---
+        const sceneConfig = gameData.scenes.game;
+
+        // --- DATA-DRIVEN BACKGROUND ---
         this.parallaxBackground = new ParallaxBackground(this);
-        this.parallaxBackground.addTileSpriteLayer({
-            textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.1,
-            tint: 0x444444,
-            blendMode: 'NORMAL',
-            rotation: 0.2,
-        });
-        this.parallaxBackground.addTileSpriteLayer({
-            textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.4,
-            tint: 0xbbbbbb,
-            blendMode: 'ADD',
-            rotation: -0.5,
-        });
-        this.parallaxBackground.addTileSpriteLayer({
-            textureKey: 'stars-background-contrast',
-            scrollSpeed: -0.7,
-            tint: 0xffffff,
-            blendMode: 'ADD',
-            rotation: 1.1,
+        sceneConfig.backgroundLayers.forEach((layer) => {
+            this.parallaxBackground.addTileSpriteLayer(layer);
         });
 
-        // --- Post-Processing Effects ---
+        // --- DATA-DRIVEN POST-PROCESSING ---
         const renderer = this.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
+        const pipelines: string[] = [];
         if (renderer.pipelines) {
-            if (!renderer.pipelines.get('Bloom')) {
+            if (sceneConfig.effects?.bloom) {
                 renderer.pipelines.addPostPipeline('Bloom', BloomPipeline);
+                const bloom = renderer.pipelines.get('Bloom') as BloomPipeline;
+                bloom.intensity = sceneConfig.effects.bloom.intensity;
+                bloom.strength = sceneConfig.effects.bloom.strength;
+                pipelines.push('Bloom');
             }
             if (!renderer.pipelines.get('Asteroid')) {
                 renderer.pipelines.add('Asteroid', new AsteroidPipeline(this.game));
             }
-            if (!renderer.pipelines.get('Vignette')) {
+            if (sceneConfig.effects?.vignette) {
                 renderer.pipelines.addPostPipeline('Vignette', VignettePipeline);
+                const vignette = renderer.pipelines.get('Vignette') as VignettePipeline;
+                vignette.innerRadius = sceneConfig.effects.vignette.innerRadius;
+                vignette.outerRadius = sceneConfig.effects.vignette.outerRadius;
+                pipelines.push('Vignette');
             }
-            this.cameras.main.setPostPipeline(['Bloom', 'Vignette']);
+            this.cameras.main.setPostPipeline(pipelines);
         }
 
         // --- Game Object Managers and Groups ---
@@ -71,7 +64,7 @@ export class Game extends Scene {
         this.playerLasers = this.physics.add.group({ classType: Laser, runChildUpdate: true });
         this.enemies = this.physics.add.group({ classType: Enemy, runChildUpdate: true });
 
-        // --- Player ---
+        // --- DATA-DRIVEN PLAYER ---
         this.player = new Player(
             this,
             this.scale.width / 2,
@@ -79,7 +72,7 @@ export class Game extends Scene {
             this.playerLasers,
         );
 
-        // --- Enemy Spawning ---
+        // --- DATA-DRIVEN ENEMY SPAWNING ---
         this.time.addEvent({
             delay: 1000,
             callback: this.spawnEnemy,
@@ -113,8 +106,6 @@ export class Game extends Scene {
             return;
         }
         this.parallaxBackground.update();
-        // The player's preUpdate is now called automatically by the scene,
-        // so we don't need to call player.update() here anymore.
         this.handleCleanup();
     }
 
@@ -128,19 +119,19 @@ export class Game extends Scene {
     }
 
     private spawnEnemy() {
-        const enemyData = Phaser.Math.RND.pick(EnemyTypes);
+        const enemyData = Phaser.Math.RND.pick(gameData.enemies);
         const x = Phaser.Math.Between(50, this.scale.width - 50);
         const enemy = new Enemy(this, x, -50, enemyData);
         this.enemies.add(enemy, true);
-        enemy.initialize(enemyData);
     }
 
     private playerHitEnemy(playerObject: any, enemyObject: any) {
         const player = playerObject as Player;
         const enemy = enemyObject as Enemy;
 
-        this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.texture.key);
-        this.explosionManager.createExplosion(player.x, player.y, 'player');
+        // --- FIX: Pass the correct data object to the explosion manager ---
+        this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.enemyData.deathDebris);
+        this.explosionManager.createExplosion(player.x, player.y, gameData.player.deathDebris);
         this.cameras.main.shake(500, 0.01);
         this.sound.play('gameover-sound');
         player.destroy();
@@ -158,23 +149,16 @@ export class Game extends Scene {
         enemy.takeDamage(1);
 
         if (!enemy.active) {
-            // --- DEATH LOGIC ---
             this.score += enemy.getData('scoreValue') as number;
             this.scoreText.setText('Score: ' + this.score);
             this.cameras.main.shake(100, 0.005);
-            this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.texture.key);
+            // --- FIX: Pass the correct data object to the explosion manager ---
+            this.explosionManager.createExplosion(enemy.x, enemy.y, enemy.enemyData.deathDebris);
         } else {
-            // --- HIT LOGIC ---
-            // Flash the enemy red to show damage.
             enemy.setTint(0xff0000);
             this.time.delayedCall(50, () => {
                 enemy.setTint(0xaaaaaa);
             });
-
-            // --- FINAL FIX ---
-            // This is the crucial connection. We call the enemy's new handleHit method,
-            // passing it a reference to the explosion manager. This triggers the shake
-            // and the small explosion, making the hit feel mighty.
             enemy.handleHit(this.explosionManager);
         }
     }

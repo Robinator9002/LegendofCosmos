@@ -1,62 +1,53 @@
 import Phaser from 'phaser';
 import { Laser } from './Laser';
-import { EngineTrail, IEngineTrailConfig } from '../effects/EngineTrail'; // Import the new trail class and its config
+import { EngineTrail } from '../effects/EngineTrail';
+import { gameData } from '../data'; // Import the new master game data object
 
 /**
  * @class Player
- * @description The user's controllable spaceship, now with a much-improved engine trail.
+ * @description The user's controllable spaceship, now configured from a central data file.
  */
 export class Player extends Phaser.Physics.Arcade.Sprite {
     // --- Class Properties ---
-    private moveSpeed: number = 400;
+    // These are now initialized from the gameData object.
+    private moveSpeed: number;
     private lastFired: number = 0;
-    private fireRate: number = 250;
+    private fireRate: number;
+
     private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
     private fireKey: Phaser.Input.Keyboard.Key;
     private lasers: Phaser.Physics.Arcade.Group;
-    private engineTrail: EngineTrail; // The player now owns and manages its trail.
+    private engineTrail: EngineTrail;
 
     constructor(scene: Phaser.Scene, x: number, y: number, lasers: Phaser.Physics.Arcade.Group) {
-        super(scene, x, y, 'player');
+        // --- DATA-DRIVEN SETUP ---
+        // We pull the player's texture directly from our data file.
+        super(scene, x, y, gameData.player.texture);
+
+        // Initialize properties from the gameData object.
+        this.moveSpeed = gameData.player.moveSpeed;
+        this.fireRate = gameData.player.fireRate;
+        this.lasers = lasers;
 
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
-        this.lasers = lasers;
-        this.setScale(0.75);
+        // Set scale and other properties from the data file.
+        this.setScale(gameData.player.scale);
         this.setTint(0xaaaaaa);
         this.setCollideWorldBounds(true);
 
         this.cursors = this.scene.input.keyboard!.createCursorKeys();
         this.fireKey = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-        // --- FINAL PLAYER TRAIL CONFIG ---
-        const playerTrailConfig: IEngineTrailConfig = {
-            tint: { start: 0xaaaaff, end: 0x00aaff },
-            // --- FIX: Restructured the 'scale' property to match the new interface.
-            // This creates a "streak" effect by scaling the X and Y axes independently.
-            scale: {
-                x: { start: 1.2, end: 0 }, // Starts wide
-                y: { start: 0.4, end: 0 }, // and short
-            },
-            lifespan: 500,
-            frequency: 40,
-            idleFrequency: 200,
-            idle: { speed: 50 },
-            moving: { speed: { min: 100, max: 150 } },
-            spawnOffset: 40,
-            rotationSpeed: Math.PI * 4,
-            spread: 10,
-            pivot: 'static',
-        };
-
-        this.engineTrail = new EngineTrail(this.scene, this, playerTrailConfig);
+        // The entire engine trail is now configured from the data file.
+        this.engineTrail = new EngineTrail(this.scene, this, gameData.player.engineTrail);
     }
 
     /**
      * @method preUpdate
      * @description The main update loop for the player.
-     * @param {number} time - The current game time (unused, but required by method signature).
+     * @param {number} time - The current game time.
      * @param {number} delta - The time elapsed since the last frame.
      */
     preUpdate(time: number, delta: number) {

@@ -40,6 +40,9 @@ export interface IPlayerData {
     moveSpeed: number;
     fireRate: number;
     engineTrail: IEngineTrailConfig;
+    // --- FIX: Added the missing property ---
+    // The player data now includes a definition for the debris created upon death.
+    deathDebris: IDebrisConfig;
 }
 
 /**
