@@ -22,25 +22,15 @@ export class ExplosionManager {
      */
     public createImpactEffect(x: number, y: number): void {
         const particles = this.scene.add.particles(x, y, 'engine-particle', {
-            // --- Directionality ---
-            // The laser comes from the bottom (angle ~270 deg), so the impact should
-            // spray downwards (angle ~90 deg). We create a 60-degree cone facing down.
             angle: { min: 60, max: 120 },
-
-            // --- Impactfulness (Increased) ---
-            speed: { min: 200, max: 350 }, // Faster particles.
-            quantity: 20, // More particles for a denser burst.
-            lifespan: 400, // Sparks last a bit longer.
-            scale: { start: 1.0, end: 0 }, // Sparks start larger.
-
-            // --- Visuals (Corrected Color) ---
+            speed: { min: 200, max: 350 },
+            quantity: 20,
+            lifespan: 400,
+            scale: { start: 1.0, end: 0 },
             blendMode: 'ADD',
-            // The tint now correctly reflects the blue laser color, cooling from
-            // a bright, hot blue-white to a deeper blue.
             tint: { start: 0xaaaaff, end: 0x0000ff },
         });
 
-        // The emitter will fire its burst of particles and then be removed from the scene.
         particles.explode(20);
     }
 
@@ -52,20 +42,43 @@ export class ExplosionManager {
      * @param {string} textureKey - The texture key of the object that exploded, used to determine debris type.
      */
     public createExplosion(x: number, y: number, textureKey: string): void {
-        this.createCoreFlash(x, y);
+        this.createCoreFlash(x, y, 60, 150); // Full-size flash
         this.createDebris(x, y, textureKey);
         this.scene.sound.play('explosion-sound', { volume: 0.4 });
     }
 
-    private createCoreFlash(x: number, y: number): void {
+    /**
+     * @method createHitExplosion
+     * @description --- NEW --- Creates a smaller, less intense explosion for hit feedback.
+     * @param {number} x - The x-coordinate of the hit.
+     * @param {number} y - The y-coordinate of the hit.
+     */
+    public createHitExplosion(x: number, y: number): void {
+        // Create a much smaller core flash that lasts for a shorter duration.
+        this.createCoreFlash(x, y, 20, 80);
+
+        // Spawn a significantly reduced number of debris particles.
+        const debrisCount = Phaser.Math.Between(1, 3);
+        for (let i = 0; i < debrisCount; i++) {
+            const partKey = Phaser.Math.RND.pick([
+                'part-generic-1',
+                'part-generic-2',
+                'part-generic-3',
+            ]);
+            // Use the existing spawn logic, but with a smaller scale range.
+            this.spawnDebrisParticle(x, y, partKey, { min: 0.2, max: 0.4 });
+        }
+    }
+
+    private createCoreFlash(x: number, y: number, radius: number, duration: number): void {
         const flash = this.scene.add.circle(x, y, 5, 0xffffff, 1);
         flash.setBlendMode('ADD');
 
         this.scene.tweens.add({
             targets: flash,
-            radius: { from: 10, to: 60 },
+            radius: { from: 10, to: radius },
             alpha: { from: 1, to: 0 },
-            duration: 150,
+            duration: duration,
             onComplete: () => {
                 flash.destroy();
             },
